@@ -102,6 +102,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.oppia.android.domain.platformparameter.PlatformParameterModule
 
 /** Tests for [OptionsFragment]. */
 @RunWith(AndroidJUnit4::class)
@@ -128,7 +129,7 @@ class OptionsFragmentTest {
 
   @Before
   fun setUp() {
-    TestModule.forceEnableLanguageSelectionUi = true
+//    TestModule.forceEnableLanguageSelectionUi = true
     Intents.init()
     setUpTestApplicationComponent()
     testCoroutineDispatchers.registerIdlingResource()
@@ -339,7 +340,7 @@ class OptionsFragmentTest {
 
   @Test
   fun testOptionsFragment_featureEnabled_appLanguageOptionIsDisplayed() {
-    TestModule.forceEnableLanguageSelectionUi = true
+//    TestModule.forceEnableLanguageSelectionUi = true
     launch<OptionsActivity>(
       createOptionActivityIntent(
         internalProfileId = 0,
@@ -353,7 +354,7 @@ class OptionsFragmentTest {
 
   @Test
   fun testOptionsFragment_featureDisabled_appLanguageOptionIsNotDisplayed() {
-    TestModule.forceEnableLanguageSelectionUi = false
+//    TestModule.forceEnableLanguageSelectionUi = false
     launch<OptionsActivity>(
       createOptionActivityIntent(
         internalProfileId = 0,
@@ -627,46 +628,47 @@ class OptionsFragmentTest {
     testCoroutineDispatchers.runCurrent()
   }
 
-  @Module
-  class TestModule {
-    companion object {
-      var forceEnableLanguageSelectionUi: Boolean = true
-    }
-
-    @Provides
-    @SplashScreenWelcomeMsg
-    fun provideSplashScreenWelcomeMsgParam(): PlatformParameterValue<Boolean> {
-      return PlatformParameterValue.createDefaultParameter(SPLASH_SCREEN_WELCOME_MSG_DEFAULT_VALUE)
-    }
-
-    @Provides
-    @SyncUpWorkerTimePeriodHours
-    fun provideSyncUpWorkerTimePeriod(): PlatformParameterValue<Int> {
-      return PlatformParameterValue.createDefaultParameter(
-        SYNC_UP_WORKER_TIME_PERIOD_IN_HOURS_DEFAULT_VALUE
-      )
-    }
-
-    @Provides
-    @EnableLanguageSelectionUi
-    fun provideEnableLanguageSelectionUi(): PlatformParameterValue<Boolean> {
-      return PlatformParameterValue.createDefaultParameter(forceEnableLanguageSelectionUi)
-    }
-
-    @Provides
-    @EnableEditAccountsOptionsUi
-    fun provideEnableEditAccountsOptionsUi(): PlatformParameterValue<Boolean> {
-      return PlatformParameterValue.createDefaultParameter(
-        false
-      )
-    }
-  }
+//  @Module
+//  class TestModule {
+//    companion object {
+//      var forceEnableLanguageSelectionUi: Boolean = true
+//    }
+//
+//    @Provides
+//    @SplashScreenWelcomeMsg
+//    fun provideSplashScreenWelcomeMsgParam(): PlatformParameterValue<Boolean> {
+//      return PlatformParameterValue.createDefaultParameter(SPLASH_SCREEN_WELCOME_MSG_DEFAULT_VALUE)
+//    }
+//
+//    @Provides
+//    @SyncUpWorkerTimePeriodHours
+//    fun provideSyncUpWorkerTimePeriod(): PlatformParameterValue<Int> {
+//      return PlatformParameterValue.createDefaultParameter(
+//        SYNC_UP_WORKER_TIME_PERIOD_IN_HOURS_DEFAULT_VALUE
+//      )
+//    }
+//
+//    @Provides
+//    @EnableLanguageSelectionUi
+//    fun provideEnableLanguageSelectionUi(): PlatformParameterValue<Boolean> {
+//      return PlatformParameterValue.createDefaultParameter(forceEnableLanguageSelectionUi)
+//    }
+//
+//    @Provides
+//    @EnableEditAccountsOptionsUi
+//    fun provideEnableEditAccountsOptionsUi(): PlatformParameterValue<Boolean> {
+//      return PlatformParameterValue.createDefaultParameter(
+//        false
+//      )
+//    }
+//  }
 
   // TODO(#59): Figure out a way to reuse modules instead of needing to re-declare them.
   @Singleton
   @Component(
     modules = [
-      TestModule::class, RobolectricModule::class, PlatformParameterSingletonModule::class,
+      PlatformParameterModule::class,
+      RobolectricModule::class, PlatformParameterSingletonModule::class,
       TestDispatcherModule::class, ApplicationModule::class,
       LoggerModule::class, ContinueModule::class, FractionInputModule::class,
       ItemSelectionInputModule::class, MultipleChoiceInputModule::class,

@@ -66,5 +66,7 @@ const val ENABLE_LANGUAGE_SELECTION_UI_DEFAULT_VALUE = false
 @Qualifier
 annotation class EnableEditAccountsOptionsUi
 
+const val ENABLE_EDIT_ACCOUNTS_OPTIONS = "enable_edit_accounts_options"
+
 /** Default value for the feature flag corresponding to [EnableEditAccountsOptionsUi]. */
 const val ENABLE_EDIT_ACCOUNTS_OPTIONS_UI_DEFAULT_VALUE = false

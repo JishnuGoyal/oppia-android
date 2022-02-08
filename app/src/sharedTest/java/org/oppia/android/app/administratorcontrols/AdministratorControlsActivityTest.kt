@@ -120,6 +120,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.oppia.android.app.model.PlatformParameter
+import org.oppia.android.domain.platformparameter.PlatformParameterModule
 
 /** Tests for [AdministratorControlsActivity]. */
 @RunWith(AndroidJUnit4::class)
@@ -146,6 +148,8 @@ class AdministratorControlsActivityTest {
   @Inject
   lateinit var context: Context
 
+
+
   @get:Rule
   val activityTestRule = ActivityTestRule(
     AdministratorControlsActivity::class.java,
@@ -165,7 +169,7 @@ class AdministratorControlsActivityTest {
 
   @Before
   fun setUp() {
-    TestModule.forceEnableEditAccountsOptionsUi = true
+
     Intents.init()
     setUpTestApplicationComponent()
     testCoroutineDispatchers.registerIdlingResource()
@@ -184,7 +188,6 @@ class AdministratorControlsActivityTest {
 
   @Test
   fun testAdministratorControlsFragment_editAccountOptionsEnabled_generalOptionsIsDisplayed() {
-    TestModule.forceEnableEditAccountsOptionsUi = true
 
     launch<AdministratorControlsActivity>(
       createAdministratorControlsActivityIntent(
@@ -206,7 +209,7 @@ class AdministratorControlsActivityTest {
 
   @Test
   fun testAdministratorControlsFragment_editAccountOptionsDisabled_generalOptionsIsNotDisplayed() {
-    TestModule.forceEnableEditAccountsOptionsUi = false
+//    TestModule.forceEnableEditAccountsOptionsUi = false
 
     launch<AdministratorControlsActivity>(
       createAdministratorControlsActivityIntent(
@@ -769,7 +772,7 @@ class AdministratorControlsActivityTest {
   @Singleton
   @Component(
     modules = [
-      TestModule::class, RobolectricModule::class,
+      PlatformParameterModule::class , RobolectricModule::class,
       PlatformParameterSingletonModule::class,
       TestDispatcherModule::class, ApplicationModule::class,
       LoggerModule::class, ContinueModule::class, FractionInputModule::class,
@@ -797,32 +800,32 @@ class AdministratorControlsActivityTest {
     fun inject(administratorControlsActivityTest: AdministratorControlsActivityTest)
   }
 
-  @Module
-  class TestModule {
-    companion object {
-      var forceEnableEditAccountsOptionsUi: Boolean = false
-    }
-
-    @Provides
-    @SplashScreenWelcomeMsg
-    fun provideSplashScreenWelcomeMsgParam(): PlatformParameterValue<Boolean> {
-      return PlatformParameterValue.createDefaultParameter(SPLASH_SCREEN_WELCOME_MSG_DEFAULT_VALUE)
-    }
-
-    @Provides
-    @EnableLanguageSelectionUi
-    fun provideEnableLanguageSelectionUi(): PlatformParameterValue<Boolean> {
-      return PlatformParameterValue.createDefaultParameter(false)
-    }
-
-    @Provides
-    @EnableEditAccountsOptionsUi
-    fun provideEnableEditAccountsOptionsUi(): PlatformParameterValue<Boolean> {
-      return PlatformParameterValue.createDefaultParameter(
-        forceEnableEditAccountsOptionsUi
-      )
-    }
-  }
+//  @Module
+//  class TestModule {
+//    companion object {
+//      var forceEnableEditAccountsOptionsUi: Boolean = false
+//    }
+//
+//    @Provides
+//    @SplashScreenWelcomeMsg
+//    fun provideSplashScreenWelcomeMsgParam(): PlatformParameterValue<Boolean> {
+//      return PlatformParameterValue.createDefaultParameter(SPLASH_SCREEN_WELCOME_MSG_DEFAULT_VALUE)
+//    }
+//
+//    @Provides
+//    @EnableLanguageSelectionUi
+//    fun provideEnableLanguageSelectionUi(): PlatformParameterValue<Boolean> {
+//      return PlatformParameterValue.createDefaultParameter(false)
+//    }
+//
+//    @Provides
+//    @EnableEditAccountsOptionsUi
+//    fun provideEnableEditAccountsOptionsUi(): PlatformParameterValue<Boolean> {
+//      return PlatformParameterValue.createDefaultParameter(
+//        forceEnableEditAccountsOptionsUi
+//      )
+//    }
+//  }
 
   class TestApplication : Application(), ActivityComponentFactory, ApplicationInjectorProvider {
     private val component: TestApplicationComponent by lazy {
