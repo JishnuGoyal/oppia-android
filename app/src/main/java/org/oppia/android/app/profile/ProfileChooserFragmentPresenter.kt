@@ -4,6 +4,9 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
+import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.databinding.ObservableField
@@ -12,6 +15,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.Transformations
 import androidx.recyclerview.widget.GridLayoutManager
+import com.takusemba.spotlight.OnSpotlightListener
+import com.takusemba.spotlight.OnTargetListener
+import com.takusemba.spotlight.Spotlight
+import com.takusemba.spotlight.Target
+import com.takusemba.spotlight.shape.Circle
+import java.util.*
 import org.oppia.android.R
 import org.oppia.android.app.administratorcontrols.AdministratorControlsActivity
 import org.oppia.android.app.fragment.FragmentScope
@@ -251,5 +260,57 @@ class ProfileChooserFragmentPresenter @Inject constructor(
     oppiaLogger.logTransitionEvent(
       oppiaClock.getCurrentTimeMs(), EventLog.EventAction.OPEN_PROFILE_CHOOSER, eventContext = null
     )
+  }
+
+  fun startSpotlight() {
+
+
+    val targets = ArrayList<Target>()
+
+    val firstRoot = FrameLayout(fragment.requireContext())
+    val first = fragment.layoutInflater.inflate(R.layout.layout_target, firstRoot)
+
+    val firstTarget = Target.Builder()
+      .setAnchor(binding.profileSelectText)
+      .setShape(Circle(600f))
+      .setOverlay(first)
+      .setOnTargetListener(object : OnTargetListener {
+        override fun onStarted() {
+
+        }
+
+        override fun onEnded() {
+
+        }
+      })
+      .build()
+
+    targets.add(firstTarget)
+
+    // create spotlight
+    val spotlight = Spotlight.Builder(activity)
+      .setTargets(targets)
+      .setBackgroundColorRes(R.color.spotlightBackground)
+      .setDuration(1000L)
+      .setAnimation(DecelerateInterpolator(2f))
+      .setOnSpotlightListener(object : OnSpotlightListener {
+        override fun onStarted() {
+
+
+        }
+
+        override fun onEnded() {
+
+
+        }
+      })
+      .build()
+
+    spotlight.start()
+
+
+
+    binding.profileChooserFragmentConstraintLayout!!.setOnClickListener { spotlight.finish() }
+
   }
 }

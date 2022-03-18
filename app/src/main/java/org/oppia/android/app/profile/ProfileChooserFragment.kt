@@ -30,4 +30,11 @@ class ProfileChooserFragment : InjectableFragment(), RouteToAdminPinListener {
   override fun routeToAdminPin() {
     profileChooserFragmentPresenter.routeToAdminPin()
   }
+
+  override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    profileChooserFragmentPresenter.startSpotlight()
+
+    super.onViewCreated(view, savedInstanceState)
+
+  }
 }
