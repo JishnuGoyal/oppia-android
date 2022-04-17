@@ -25,6 +25,7 @@ import org.oppia.android.app.viewmodel.ObservableViewModel
 import org.oppia.android.domain.oppialogger.OppiaLogger
 import org.oppia.android.domain.profile.ProfileManagementController
 import org.oppia.android.domain.topic.TopicListController
+import org.oppia.android.domain.walkthrough.checkpointing.WalkthroughCheckpointController
 import org.oppia.android.util.data.AsyncResult
 import org.oppia.android.util.data.DataProvider
 import org.oppia.android.util.data.DataProviders.Companion.combineWith
@@ -44,6 +45,7 @@ class HomeViewModel(
   private val oppiaLogger: OppiaLogger,
   private val internalProfileId: Int,
   private val profileManagementController: ProfileManagementController,
+  private val walkthroughCheckpointController: WalkthroughCheckpointController,
   private val topicListController: TopicListController,
   @TopicHtmlParserEntityType private val topicEntityType: String,
   @StoryHtmlParserEntityType private val storyEntityType: String,
@@ -240,5 +242,9 @@ class HomeViewModel(
     return if (allTopicsList.isNotEmpty()) {
       listOf(AllTopicsViewModel) + allTopicsList
     } else emptyList()
+  }
+
+  private fun retrieveWalkthroughCheckpoint(){
+    walkthroughCheckpointController.retrieveWalkthroughCheckpoint(profileId, TAG_HOME_FRAGMENT)
   }
 }

@@ -3,9 +3,18 @@ package org.oppia.android.app.home
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.get
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
+import com.takusemba.spotlight.OnSpotlightListener
+import com.takusemba.spotlight.OnTargetListener
+import com.takusemba.spotlight.Spotlight
+import com.takusemba.spotlight.Target
+import com.takusemba.spotlight.shape.Circle
+import java.util.*
 import org.oppia.android.R
 import org.oppia.android.app.drawer.NAVIGATION_PROFILE_ID_ARGUMENT_KEY
 import org.oppia.android.app.fragment.FragmentScope
@@ -155,5 +164,54 @@ class HomeFragmentPresenter @Inject constructor(
     oppiaLogger.logTransitionEvent(
       oppiaClock.getCurrentTimeMs(), eventContext = oppiaLogger.createOpenHomeContext()
     )
+  }
+
+  fun startSpotlight(){
+    val targets = ArrayList<Target>()
+
+    val firstRoot = FrameLayout(fragment.requireContext())
+    val first = fragment.layoutInflater.inflate(R.layout.layout_target, firstRoot)
+
+    val firstTarget = Target.Builder()
+      .setAnchor(binding.homeRecyclerView)
+      .setShape(Circle(600f))
+      .setOverlay(first)
+      .setOnTargetListener(object : OnTargetListener {
+        override fun onStarted() {
+
+        }
+
+        override fun onEnded() {
+
+        }
+      })
+      .build()
+
+    targets.add(firstTarget)
+
+    // create spotlight
+    val spotlight = Spotlight.Builder(activity)
+      .setTargets(targets)
+      .setBackgroundColorRes(R.color.spotlightBackground)
+      .setDuration(1000L)
+      .setAnimation(DecelerateInterpolator(2f))
+      .setOnSpotlightListener(object : OnSpotlightListener {
+        override fun onStarted() {
+
+
+        }
+
+        override fun onEnded() {
+
+
+        }
+      })
+      .build()
+
+    spotlight.start()
+
+
+
+    binding.homeFragmentFrameLayout.setOnClickListener { spotlight.finish() }
   }
 }

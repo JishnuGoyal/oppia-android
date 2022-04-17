@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package model;
+
+option java_package = "org.oppia.android.app.model";
+option java_multiple_files = true;
+
+// Top-level proto used to store walkthrough checkpoint per-profile basis.
+message WalkthroughCheckpointDatabase {
+
+  // Map from walkthrough ID to WalkthroughCheckpoint.
+  map<string, WalkthroughCheckpoint> walkthrough_checkpoint = 1;
+}
+
+// Corresponds to the walkthrough checkpoint which will be used to resume the walkthrough.
+// This model contains information about all states of the deck which have been visited by the user.
+message WalkthroughCheckpoint {
+
+  // no of walkthrough screens seen by user
+  int32 number_of_screens_completed = 1;
+
+  bool is_dismissed = 2;
+}
+
+
+
+// Structure that holds the the walkthrough_title and the walkthrough_id associated with a saved
+// checkpoint. This container is used to return the details required to delete the oldest checkpoint
+// when the space allocated to save the checkpoints runs out.
+message WalkthroughCheckpointDetails{
+
+  // The ID of the stored walkthrough checkpoint.
+  string walkthrough_id = 1;
+
+  // The title of the walkthrough whose checkpoint is saved.
+  string walkthrough_title = 2;
+
+  // Stores the version of the walkthrough which is compatible with the saved checkpoint.
+  int32 walkthrough_version = 3;
+}

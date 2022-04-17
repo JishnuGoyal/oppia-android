@@ -31,4 +31,9 @@ class HomeFragment : InjectableFragment(), TopicSummaryClickListener {
   override fun onTopicSummaryClicked(topicSummary: TopicSummary) {
     homeFragmentPresenter.onTopicSummaryClicked(topicSummary)
   }
+
+  override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    homeFragmentPresenter.startSpotlight()
+    super.onViewCreated(view, savedInstanceState)
+  }
 }
