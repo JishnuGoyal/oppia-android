@@ -62,6 +62,13 @@ annotation class EnableLanguageSelectionUi
 /** Default value for the feature flag corresponding to [EnableLanguageSelectionUi]. */
 const val ENABLE_LANGUAGE_SELECTION_UI_DEFAULT_VALUE = false
 
+/** Qualifier for the feature flag corresponding to enabling the spotlight UI. */
+@Qualifier
+annotation class EnableSpotlightUi
+
+/** Default value for the feature flag corresponding to [EnableSpotlightUi]. */
+const val ENABLE_SPOTLIGHT_UI_DEFAULT_VALUE = false
+
 /**
  * Qualifier for the platform parameter that controls the visibility of [ProfileAndDeviceIdActivity]
  * and working of learner study related analytics logging.

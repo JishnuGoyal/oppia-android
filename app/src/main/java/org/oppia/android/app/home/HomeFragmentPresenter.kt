@@ -6,7 +6,6 @@ import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.get
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import com.takusemba.spotlight.OnSpotlightListener
@@ -170,7 +169,7 @@ class HomeFragmentPresenter @Inject constructor(
     val targets = ArrayList<Target>()
 
     val firstRoot = FrameLayout(fragment.requireContext())
-    val first = fragment.layoutInflater.inflate(R.layout.layout_target, firstRoot)
+    val first = fragment.layoutInflater.inflate(R.layout.onboarding_next_button_overlay, firstRoot)
 
     val firstTarget = Target.Builder()
       .setAnchor(binding.homeRecyclerView)

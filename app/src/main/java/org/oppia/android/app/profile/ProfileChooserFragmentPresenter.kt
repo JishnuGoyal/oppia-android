@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.databinding.ObservableField
@@ -266,24 +265,22 @@ class ProfileChooserFragmentPresenter @Inject constructor(
   }
 
   fun startSpotlight() {
-
-
     val targets = ArrayList<Target>()
 
-    val firstRoot = FrameLayout(fragment.requireContext())
-    val first = fragment.layoutInflater.inflate(R.layout.layout_target, firstRoot)
+    val nextButton = FrameLayout(fragment.requireContext())
+    val nextButtonSpotlight = fragment.layoutInflater.inflate(R.layout.onboarding_next_button_overlay, nextButton)
 
     val firstTarget = Target.Builder()
       .setAnchor(binding.profileSelectText)
       .setShape(Circle(600f))
-      .setOverlay(first)
+      .setOverlay(nextButtonSpotlight)
       .setOnTargetListener(object : OnTargetListener {
         override fun onStarted() {
-
+          // any additional behaviour can be assigned here
         }
 
         override fun onEnded() {
-
+          // any additional behaviour can be assigned here
         }
       })
       .build()
@@ -298,22 +295,16 @@ class ProfileChooserFragmentPresenter @Inject constructor(
       .setAnimation(DecelerateInterpolator(2f))
       .setOnSpotlightListener(object : OnSpotlightListener {
         override fun onStarted() {
-
-
+          // any additional behaviour
         }
 
         override fun onEnded() {
-
-
+          // any additional behaviour
         }
       })
       .build()
 
     spotlight.start()
-
-
-
     binding.profileChooserFragmentConstraintLayout!!.setOnClickListener { spotlight.finish() }
-
   }
 }
