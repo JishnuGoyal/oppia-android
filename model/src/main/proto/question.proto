@@ -100,4 +100,6 @@ message UserAssessmentPerformance {
   // Stores the user's mastery degree per skill for the training session via a map of skill IDs to mastery degrees.
   // A mastery degree is a numerical score representing the user's strength in a particular skill.
   map<string, double> mastery_per_skill_mapping = 3;
+
+
 }
