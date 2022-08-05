@@ -165,6 +165,7 @@
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
           app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+          app:itemDecorator="{@drawable/divider_item_decoration_grey}"
           app:list="@{viewModel.chapterSummaryItemList}" />
       </LinearLayout>
     </LinearLayout>

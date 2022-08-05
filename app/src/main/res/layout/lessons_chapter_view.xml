@@ -40,9 +40,9 @@
       android:gravity="center"
       android:importantForAccessibility="@{viewModel.chapterPlayState != ChapterPlayState.NOT_PLAYABLE_MISSING_PREREQUISITES ? View.IMPORTANT_FOR_ACCESSIBILITY_YES : View.IMPORTANT_FOR_ACCESSIBILITY_NO}"
       android:paddingStart="8dp"
-      android:paddingTop="12dp"
+
       android:paddingEnd="8dp"
-      android:paddingBottom="12dp"
+
       android:text="@{viewModel.computePlayChapterIndexText()}"
       android:textColor="@color/color_def_white"
       android:textSize="20sp" />
