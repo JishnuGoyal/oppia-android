@@ -16,6 +16,7 @@ import com.takusemba.spotlight.shape.Circle
 import com.takusemba.spotlight.shape.RoundedRectangle
 import com.takusemba.spotlight.shape.Shape
 import java.util.*
+import javax.inject.Inject
 import org.oppia.android.R
 import org.oppia.android.app.onboarding.SpotlightNavigationListener
 import org.oppia.android.databinding.OverlayOverLeftBinding
@@ -252,16 +253,14 @@ class OverlayPositionAutomator(private val activity: Activity, private val fragm
   }
 
   fun createTarget(
-    anchor: View,
-    hintText: String = "",
-    shape: SpotlightShape = SpotlightShape.RoundedRectangle,
+    spotlightTarget: SpotlightTarget
   ) {
-    initialiseAnchor(anchor)
-    initialiseHintText(hintText)
+    initialiseAnchor(spotlightTarget.anchor)
+    initialiseHintText(spotlightTarget.hint)
 
     val target = Target.Builder()
-      .setAnchor(anchor)
-      .setShape(getShape(shape))
+      .setAnchor(spotlightTarget.anchor)
+      .setShape(getShape(spotlightTarget.shape))
       .setOverlay(setOverlayPosition())
       .setOnTargetListener(object : OnTargetListener {
         override fun onStarted() {
@@ -326,11 +325,11 @@ class OverlayPositionAutomator(private val activity: Activity, private val fragm
     object BottomLeft : AnchorPosition()
     object BottomRight : AnchorPosition()
   }
-
-  companion object {
-    sealed class SpotlightShape {
-      object RoundedRectangle : SpotlightShape()
-      object Circle : SpotlightShape()
-    }
-  }
 }
+
+data class SpotlightTarget(
+  val anchor: View,
+  val hint: String = "",
+  val shape: SpotlightShape = SpotlightShape.RoundedRectangle,
+  val feature: org.oppia.android.app.model.Spotlight.FeatureCase
+)
