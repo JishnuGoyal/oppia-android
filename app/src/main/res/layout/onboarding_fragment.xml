@@ -19,7 +19,7 @@
     android:id="@+id/onboarding_fragment_constraint_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/oppia_background_yellow_ivory">
+    android:background="@color/component_color_onboarding_activity_background_color">
 
     <androidx.viewpager2.widget.ViewPager2
       android:id="@+id/onboarding_slide_view_pager"
@@ -46,7 +46,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginBottom="16dp"
-        android:background="@color/oppia_primary_text"
+        android:background="@color/component_color_onboarding_activity_divider_color"
         app:layout_constraintBottom_toTopOf="@+id/slide_dots_container" />
 
       <LinearLayout

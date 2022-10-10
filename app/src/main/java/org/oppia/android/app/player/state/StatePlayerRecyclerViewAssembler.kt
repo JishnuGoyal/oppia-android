@@ -373,7 +373,7 @@ class StatePlayerRecyclerViewAssembler private constructor(
             answerAndResponse.userAnswer,
             gcsEntityId,
             /* isAnswerCorrect= */ false
-          ).let { viewModel ->
+          )?.let { viewModel ->
             if (showPreviousAnswers) {
               pendingItemList += viewModel
             }
@@ -397,17 +397,17 @@ class StatePlayerRecyclerViewAssembler private constructor(
     answersAndResponses.lastOrNull()?.let { answerAndResponse ->
       if (playerFeatureSet.pastAnswerSupport) {
         if (isLastAnswerCorrect && isSplitView.get()!!) {
-          rightPendingItemList += createSubmittedAnswer(
+          createSubmittedAnswer(
             answerAndResponse.userAnswer,
             gcsEntityId,
             isAnswerCorrect = true
-          )
+          )?.let(rightPendingItemList::add)
         } else {
-          pendingItemList += createSubmittedAnswer(
+          createSubmittedAnswer(
             answerAndResponse.userAnswer,
             gcsEntityId,
             isLastAnswerCorrect || answerAndResponse.isCorrectAnswer
-          )
+          )?.let(pendingItemList::add)
         }
       }
       if (playerFeatureSet.feedbackSupport) {
@@ -551,8 +551,8 @@ class StatePlayerRecyclerViewAssembler private constructor(
     userAnswer: UserAnswer,
     gcsEntityId: String,
     isAnswerCorrect: Boolean
-  ): SubmittedAnswerViewModel {
-    val submittedAnswerViewModel =
+  ): SubmittedAnswerViewModel? {
+    return userAnswer.takeIf { it.hasAnswerToDisplayToUser() }?.let {
       SubmittedAnswerViewModel(
         userAnswer,
         gcsEntityId,
@@ -560,10 +560,11 @@ class StatePlayerRecyclerViewAssembler private constructor(
         isSplitView.get()!!,
         playerFeatureSet.conceptCardSupport,
         resourceHandler
-      )
-    submittedAnswerViewModel.setIsCorrectAnswer(isAnswerCorrect)
-    submittedAnswerViewModel.isExtraInteractionAnswerCorrect.set(isAnswerCorrect)
-    return submittedAnswerViewModel
+      ).also { submittedAnswerViewModel ->
+        submittedAnswerViewModel.setIsCorrectAnswer(isAnswerCorrect)
+        submittedAnswerViewModel.isExtraInteractionAnswerCorrect.set(isAnswerCorrect)
+      }
+    }
   }
 
   private fun createFeedbackItem(
@@ -886,11 +887,13 @@ class StatePlayerRecyclerViewAssembler private constructor(
     private val interactionViewModelFactoryMap: Map<String, InteractionItemFactory>,
     private val backgroundCoroutineDispatcher: CoroutineDispatcher,
     private val resourceHandler: AppLanguageResourceHandler,
-    private val translationController: TranslationController
+    private val translationController: TranslationController,
+    private val multiTypeBuilderFactory: BindableAdapter.MultiTypeBuilder.Factory,
+    private val singleTypeBuilderFactory: BindableAdapter.SingleTypeBuilder.Factory
   ) {
-    private val adapterBuilder = BindableAdapter.MultiTypeBuilder.newBuilder(
-      StateItemViewModel::viewType
-    )
+
+    private val adapterBuilder: BindableAdapter.MultiTypeBuilder<StateItemViewModel,
+      StateItemViewModel.ViewType> = multiTypeBuilderFactory.create { it.viewType }
 
     /**
      * Tracks features individually enabled for the assembler. No features are enabled by default.
@@ -936,7 +939,8 @@ class StatePlayerRecyclerViewAssembler private constructor(
               entityType,
               contentViewModel.gcsEntityId,
               imageCenterAlign = true,
-              customOppiaTagActionListener = customTagListener
+              customOppiaTagActionListener = customTagListener,
+              displayLocale = resourceHandler.getDisplayLocale()
             ).parseOppiaHtml(
               contentViewModel.htmlContent.toString(),
               binding.contentTextView,
@@ -970,7 +974,8 @@ class StatePlayerRecyclerViewAssembler private constructor(
               entityType,
               feedbackViewModel.gcsEntityId,
               imageCenterAlign = true,
-              customOppiaTagActionListener = customTagListener
+              customOppiaTagActionListener = customTagListener,
+              displayLocale = resourceHandler.getDisplayLocale()
             ).parseOppiaHtml(
               feedbackViewModel.htmlContent.toString(),
               binding.feedbackTextView,
@@ -1078,7 +1083,8 @@ class StatePlayerRecyclerViewAssembler private constructor(
                 entityType,
                 submittedAnswerViewModel.gcsEntityId,
                 imageCenterAlign = false,
-                customOppiaTagActionListener = customTagListener
+                customOppiaTagActionListener = customTagListener,
+                displayLocale = resourceHandler.getDisplayLocale()
               )
               submittedAnswerViewModel.setSubmittedAnswer(
                 htmlParser.parseOppiaHtml(
@@ -1115,8 +1121,7 @@ class StatePlayerRecyclerViewAssembler private constructor(
       gcsEntityId: String,
       supportsConceptCards: Boolean
     ): BindableAdapter<StringList> {
-      return BindableAdapter.SingleTypeBuilder
-        .newBuilder<StringList>()
+      return singleTypeBuilderFactory.create<StringList>()
         .registerViewBinder(
           inflateView = { parent ->
             SubmittedAnswerListItemBinding.inflate(
@@ -1137,8 +1142,7 @@ class StatePlayerRecyclerViewAssembler private constructor(
       gcsEntityId: String,
       supportsConceptCards: Boolean
     ): BindableAdapter<String> {
-      return BindableAdapter.SingleTypeBuilder
-        .newBuilder<String>()
+      return singleTypeBuilderFactory.create<String>()
         .registerViewBinder(
           inflateView = { parent ->
             SubmittedHtmlAnswerItemBinding.inflate(
@@ -1153,7 +1157,8 @@ class StatePlayerRecyclerViewAssembler private constructor(
                 entityType,
                 gcsEntityId,
                 imageCenterAlign = false,
-                customOppiaTagActionListener = customTagListener
+                customOppiaTagActionListener = customTagListener,
+                displayLocale = resourceHandler.getDisplayLocale()
               ).parseOppiaHtml(
                 viewModel,
                 binding.submittedAnswerContentTextView,
@@ -1388,7 +1393,9 @@ class StatePlayerRecyclerViewAssembler private constructor(
         String, @JvmSuppressWildcards InteractionItemFactory>,
       @BackgroundDispatcher private val backgroundCoroutineDispatcher: CoroutineDispatcher,
       private val resourceHandler: AppLanguageResourceHandler,
-      private val translationController: TranslationController
+      private val translationController: TranslationController,
+      private val multiAdapterBuilderFactory: BindableAdapter.MultiTypeBuilder.Factory,
+      private val singleAdapterFactory: BindableAdapter.SingleTypeBuilder.Factory
     ) {
       /**
        * Returns a new [Builder] for the specified GCS resource bucket information for loading
@@ -1406,7 +1413,9 @@ class StatePlayerRecyclerViewAssembler private constructor(
           interactionViewModelFactoryMap,
           backgroundCoroutineDispatcher,
           resourceHandler,
-          translationController
+          translationController,
+          multiAdapterBuilderFactory,
+          singleAdapterFactory
         )
       }
     }
@@ -1452,6 +1461,18 @@ class StatePlayerRecyclerViewAssembler private constructor(
         supportAudioVoiceovers = supportAudioVoiceovers || other.supportAudioVoiceovers,
         conceptCardSupport = conceptCardSupport || other.conceptCardSupport
       )
+    }
+  }
+
+  private companion object {
+    private fun UserAnswer.hasAnswerToDisplayToUser(): Boolean {
+      return when (textualAnswerCase) {
+        UserAnswer.TextualAnswerCase.HTML_ANSWER -> htmlAnswer.isNotEmpty()
+        UserAnswer.TextualAnswerCase.PLAIN_ANSWER -> plainAnswer.isNotEmpty()
+        UserAnswer.TextualAnswerCase.LIST_OF_HTML_ANSWERS ->
+          listOfHtmlAnswers.setOfHtmlStringsOrBuilderList.isNotEmpty()
+        UserAnswer.TextualAnswerCase.TEXTUALANSWER_NOT_SET, null -> false
+      }
     }
   }
 }

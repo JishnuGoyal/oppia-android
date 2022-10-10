@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import org.oppia.android.app.administratorcontrols.LoadProfileEditListener
 import org.oppia.android.app.fragment.FragmentScope
 import org.oppia.android.app.model.Profile
 import org.oppia.android.app.recyclerview.BindableAdapter
@@ -18,7 +19,8 @@ import javax.inject.Inject
 class ProfileListFragmentPresenter @Inject constructor(
   private val activity: AppCompatActivity,
   private val fragment: Fragment,
-  private val viewModelProvider: ViewModelProvider<ProfileListViewModel>
+  private val viewModelProvider: ViewModelProvider<ProfileListViewModel>,
+  private val singleTypeBuilderFactory: BindableAdapter.SingleTypeBuilder.Factory
 ) {
 
   private var isMultipane = false
@@ -51,8 +53,7 @@ class ProfileListFragmentPresenter @Inject constructor(
   }
 
   private fun createRecyclerViewAdapter(): BindableAdapter<Profile> {
-    return BindableAdapter.SingleTypeBuilder
-      .newBuilder<Profile>()
+    return singleTypeBuilderFactory.create<Profile>()
       .registerViewDataBinderWithSameModelType(
         inflateDataBinding = ProfileListProfileViewBinding::inflate,
         setViewModel = ::bindProfileView
@@ -66,13 +67,14 @@ class ProfileListFragmentPresenter @Inject constructor(
   ) {
     binding.profile = profile
     binding.root.setOnClickListener {
-      activity.startActivity(
-        ProfileEditActivity.createProfileEditActivity(
-          activity,
-          profile.id.internalId,
-          isMultipane
-        )
-      )
+
+      if (!isMultipane) {
+        val routeToProfileEditListener = (activity as RouteToProfileEditListener)
+        routeToProfileEditListener.routeToProfileEditActivity(profile.id.internalId)
+      } else {
+        val loadProfileEditListener = (activity as LoadProfileEditListener)
+        loadProfileEditListener.loadProfileEdit(profile.id.internalId, profile.name)
+      }
     }
   }
 

@@ -125,8 +125,9 @@ git_repository(
 # to correctly size in-line SVGs (such as those needed for LaTeX-based math expressions).
 git_repository(
     name = "androidsvg",
-    commit = "6bd15f69caee3e6857fcfcd123023716b4adec1d",
+    commit = "4bc1d26412f0fb9fd4ef263fa93f6a64f4d4dbcf",
     remote = "https://github.com/oppia/androidsvg",
+    shallow_since = "1647295507 -0700",
 )
 
 # A custom fork of KotliTeX that removes resources artifacts that break the build, and updates the
@@ -136,6 +137,15 @@ git_repository(
     commit = "6b7db8ff9e0f4a70bdaa25f482143e038fd0c301",
     remote = "https://github.com/oppia/kotlitex",
     shallow_since = "1647554845 -0700",
+)
+
+# A custom fork of Android-MarqueeView that is updated with latest dependencies compatible with Oppia and also
+# min target SDK version set to be compatible with Oppia.
+git_repository(
+    name = "marqueeview",
+    commit = "a935a78c88a01958716396e6f2cb4abf4559eccc",
+    remote = "https://github.com/oppia/Android-MarqueeView",
+    shallow_since = "1663393399 -0400",
 )
 
 bind(

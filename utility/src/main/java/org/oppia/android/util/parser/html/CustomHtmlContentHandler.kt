@@ -11,7 +11,6 @@ import org.xml.sax.Attributes
 import org.xml.sax.ContentHandler
 import org.xml.sax.Locator
 import org.xml.sax.XMLReader
-import java.util.ArrayDeque
 
 /**
  * A custom [ContentHandler] and [Html.TagHandler] for processing custom HTML tags. This class must
@@ -21,7 +20,7 @@ import java.util.ArrayDeque
  */
 class CustomHtmlContentHandler private constructor(
   private val customTagHandlers: Map<String, CustomTagHandler>,
-  private val imageRetriever: ImageRetriever
+  private val imageRetriever: ImageRetriever?
 ) : ContentHandler, Html.TagHandler {
   private var originalContentHandler: ContentHandler? = null
   private var currentTrackedTag: TrackedTag? = null
@@ -50,6 +49,7 @@ class CustomHtmlContentHandler private constructor(
 
   override fun endDocument() {
     originalContentHandler?.endDocument()
+    originalContentHandler = null // There's nothing left to read.
   }
 
   override fun startElement(uri: String?, localName: String?, qName: String?, atts: Attributes?) {
@@ -98,7 +98,7 @@ class CustomHtmlContentHandler private constructor(
           currentTrackedCustomTags += TrackedCustomTag(
             localCurrentTrackedTag.tag, localCurrentTrackedTag.attributes, output.length
           )
-          customTagHandlers.getValue(tag).handleOpeningTag(output)
+          customTagHandlers.getValue(tag).handleOpeningTag(output, tag)
         }
       }
       tag in customTagHandlers -> {
@@ -110,7 +110,7 @@ class CustomHtmlContentHandler private constructor(
           "Expected tracked tag $currentTrackedTag to match custom tag: $tag"
         }
         val (_, attributes, openTagIndex) = currentTrackedCustomTag
-        customTagHandlers.getValue(tag).handleClosingTag(output)
+        customTagHandlers.getValue(tag).handleClosingTag(output, indentation = 0, tag)
         customTagHandlers.getValue(tag)
           .handleTag(attributes, openTagIndex, output.length, output, imageRetriever)
       }
@@ -123,6 +123,27 @@ class CustomHtmlContentHandler private constructor(
     val attributes: Attributes,
     val openTagIndex: Int
   )
+
+  /**
+   * Handler interface for <li> tags. Subclasses set the bullet/numbered list appearance.
+   */
+  interface ListTag {
+    /**
+     * Called when an opening <li> tag is encountered.
+     *
+     * Inserts an invisible [ListItemMark] span that doesn't do any styling.
+     * Instead, [closeItem] will later find the location of this span so it knows where the opening tag was.
+     */
+    fun openItem(text: Editable)
+
+    /**
+     * Called when a closing </li> tag is encountered.
+     *
+     * Pops out the invisible [ListItemMark] span and uses it to get the opening tag location.
+     * Then, sets a [ListItemLeadingMarginSpan] from the opening tag position to closing tag position.
+     */
+    fun closeItem(text: Editable, indentation: Int)
+  }
 
   /** Handler interface for a custom tag and its attributes. */
   interface CustomTagHandler {
@@ -140,7 +161,7 @@ class CustomHtmlContentHandler private constructor(
       openIndex: Int,
       closeIndex: Int,
       output: Editable,
-      imageRetriever: ImageRetriever
+      imageRetriever: ImageRetriever?
     ) {
     }
 
@@ -152,7 +173,7 @@ class CustomHtmlContentHandler private constructor(
      *
      * @param output the destination [Editable] to which spans can be added
      */
-    fun handleOpeningTag(output: Editable) {}
+    fun handleOpeningTag(output: Editable, tag: String) {}
 
     /**
      * Called when the closing of a custom tag is encountered. This does not support processing
@@ -161,8 +182,9 @@ class CustomHtmlContentHandler private constructor(
      * This function will always be called before [handleClosingTag].
      *
      * @param output the destination [Editable] to which spans can be added
+     * @param indentation The zero-based indentation level of this item.
      */
-    fun handleClosingTag(output: Editable) {}
+    fun handleClosingTag(output: Editable, indentation: Int, tag: String) {}
   }
 
   /**
@@ -202,13 +224,23 @@ class CustomHtmlContentHandler private constructor(
      */
     fun <T> fromHtml(
       html: String,
-      imageRetriever: T,
+      imageRetriever: T?,
       customTagHandlers: Map<String, CustomTagHandler>
     ): Spannable where T : Html.ImageGetter, T : ImageRetriever {
       // Adjust the HTML to allow the custom content handler to properly initialize custom tag
-      // tracking.
+      // tracking. Also, make sure that paragraph tags are always preceded by newlines since that's
+      // expected by SpannableStringBuilder (see:
+      // https://developer.android.com/reference/android/text/Spanned#SPAN_PARAGRAPH). The same must
+      // be done for other block-like tags, including: divs, ols, uls, and lis. Note that the regex
+      // uses a positive lookahead to match the closing tag since multiple of these tags can be
+      // consecutive.
+      val lineAdjustedHtml =
+        html.replace(
+          "([^\n])<(p|ol|ul|li|oppia-ul|oppia-ol|oppia-li|div)(?=>)".toRegex(),
+          "$1\n<$2"
+        )
       return HtmlCompat.fromHtml(
-        "<init-custom-handler/>$html",
+        "<init-custom-handler/>$lineAdjustedHtml",
         HtmlCompat.FROM_HTML_MODE_LEGACY,
         imageRetriever,
         CustomHtmlContentHandler(customTagHandlers, imageRetriever),

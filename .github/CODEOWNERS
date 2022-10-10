@@ -50,13 +50,11 @@ gradlew.bat @BenHenning
 # Devbots configurations.
 /.devbots/ @BenHenning
 
-# All tests.
-*Test.kt @anandwana001
-
+# TODO(#4625): Replace BenHenning with rt4914 after 02-10-2022.
 # All resource files.
-/app/src/main/res/**/*.xml @rt4914
-/utility/src/main/res/**/*.xml @rt4914
-/app/src/main/res/values/colors_migrating.xml @rt4914
+/app/src/main/res/**/*.xml @BenHenning
+/utility/src/main/res/**/*.xml @BenHenning
+/app/src/main/res/values/colors_migrating.xml @BenHenning
 
 # App UI strings.
 /app/src/main/res/values*/strings.xml @BenHenning
@@ -65,14 +63,15 @@ gradlew.bat @BenHenning
 # Proguard configurations.
 *.pro @BenHenning
 
+# TODO(#4625): Add rt4914 after 02-10-2022.
 # Lesson assets.
-/domain/src/main/assets/ @BenHenning @rt4914
+/domain/src/main/assets/ @BenHenning
 
 # Android manifests and top-level app configuration.
 *Manifest.xml @BenHenning
 
 # Linter configuration.
-buf.yaml @anandwana001
+buf.yaml @BenHenning
 
 # Third-party dependencies.
 /third_party/ @BenHenning
@@ -107,9 +106,10 @@ config/kitkat_main_dex_class_list.txt @BenHenning
 #                                    app module                                     #
 #####################################################################################
 
+# TODO(#4625): Add rt4914 after 02-10-2022.
 # Global app module code ownership.
-/app/**/*.kt @rt4914
-/app/**/*.java @rt4914
+/app/**/*.kt @BenHenning
+/app/**/*.java @BenHenning
 
 # State players.
 /app/src/*/java/org/oppia/android/app/player/ @BenHenning
@@ -128,8 +128,8 @@ config/kitkat_main_dex_class_list.txt @BenHenning
 # Databinding adapters.
 /app/src/main/java/org/oppia/android/app/databinding/ @BenHenning
 
-# App deprecation functionality.
-/app/src/*/java/org/oppia/android/app/deprecation/ @BenHenning
+# App notices functionality (such as for deprecations).
+/app/src/*/java/org/oppia/android/app/notice/ @BenHenning
 
 # Parsing functionality needed for interactions.
 /app/src/*/java/org/oppia/android/app/parser/ @BenHenning
@@ -144,7 +144,7 @@ config/kitkat_main_dex_class_list.txt @BenHenning
 /app/src/*/java/org/oppia/android/app/viewmodel/ @BenHenning
 
 # App testing infrastructure.
-/app/src/*/java/org/oppia/android/app/testing/ @anandwana001
+/app/src/*/java/org/oppia/android/app/testing/ @BenHenning
 
 #####################################################################################
 #                                  domain module                                    #
@@ -152,9 +152,6 @@ config/kitkat_main_dex_class_list.txt @BenHenning
 
 # Global domain module code ownership.
 /domain/**/*.kt @BenHenning
-
-# Domain test resources.
-/domain/src/test/res/values/strings.xml @BenHenning
 
 # Questions support.
 /domain/src/*/java/org/oppia/android/domain/question/ @BenHenning
@@ -167,7 +164,7 @@ config/kitkat_main_dex_class_list.txt @BenHenning
 #####################################################################################
 
 # Global testing module code ownership.
-/testing/**/*.kt @anandwana001 @BenHenning
+/testing/**/*.kt @BenHenning
 
 #####################################################################################
 #                                    data module                                    #
@@ -184,14 +181,19 @@ config/kitkat_main_dex_class_list.txt @BenHenning
 # Global utility module code ownership.
 /utility/**/*.kt @BenHenning
 
+# Utility test resources.
+/utility/src/test/res/values/strings.xml @BenHenning
+
+# TODO(#4625): Add rt4914 after 02-10-2022.
 # Accessibility utilities.
-/utility/src/*/java/org/oppia/android/util/accessibility/ @rt4914
+/utility/src/*/java/org/oppia/android/util/accessibility/ @BenHenning
 
 # Core logging infrastructure.
 /utility/src/*/java/org/oppia/android/util/logging/ @BenHenning
 
+# TODO(#4625): Add rt4914 after 02-10-2022.
 # Miscellaneous statusbar UI utilities.
-/utility/src/*/java/org/oppia/android/util/statusbar/ @rt4914
+/utility/src/*/java/org/oppia/android/util/statusbar/ @BenHenning
 
 #####################################################################################
 #                                     scripts                                       #
@@ -199,9 +201,6 @@ config/kitkat_main_dex_class_list.txt @BenHenning
 
 # Global scripts code ownership.
 /scripts/ @BenHenning
-
-# Shell file ownership.
-/scripts/**/*.sh @anandwana001 @BenHenning
 
 # Script proto ownership.
 /scripts/**/*.proto @BenHenning
@@ -225,7 +224,7 @@ config/kitkat_main_dex_class_list.txt @BenHenning
 #####################################################################################
 
 # End-to-end test utilities and modules.
-/instrumentation/src/java/**/*.kt @anandwana001 @BenHenning
+/instrumentation/**/*.kt @BenHenning
 
 #####################################################################################
 #                                global overrides                                   #

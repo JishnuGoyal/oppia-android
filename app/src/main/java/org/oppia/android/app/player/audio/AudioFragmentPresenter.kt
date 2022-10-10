@@ -125,7 +125,7 @@ class AudioFragmentPresenter @Inject constructor(
       activity,
       Observer<String> { result ->
         viewModel.selectedLanguageCode = result
-        viewModel.loadMainContentAudio(false)
+        viewModel.loadMainContentAudio(allowAutoPlay = false, reloadingContent = false)
       }
     )
   }
@@ -133,11 +133,12 @@ class AudioFragmentPresenter @Inject constructor(
   /** Gets language code by [AudioLanguage]. */
   private fun getAudioLanguage(audioLanguage: AudioLanguage): String {
     return when (audioLanguage) {
-      AudioLanguage.ENGLISH_AUDIO_LANGUAGE -> "en"
       AudioLanguage.HINDI_AUDIO_LANGUAGE -> "hi"
       AudioLanguage.FRENCH_AUDIO_LANGUAGE -> "fr"
       AudioLanguage.CHINESE_AUDIO_LANGUAGE -> "zh"
-      else -> "en"
+      AudioLanguage.BRAZILIAN_PORTUGUESE_LANGUAGE -> "pt"
+      AudioLanguage.NO_AUDIO, AudioLanguage.UNRECOGNIZED, AudioLanguage.AUDIO_LANGUAGE_UNSPECIFIED,
+      AudioLanguage.ENGLISH_AUDIO_LANGUAGE -> "en"
     }
   }
 
@@ -190,7 +191,8 @@ class AudioFragmentPresenter @Inject constructor(
   fun setStateAndExplorationId(newState: State, explorationId: String) =
     viewModel.setStateAndExplorationId(newState, explorationId)
 
-  fun loadMainContentAudio(allowAutoPlay: Boolean) = viewModel.loadMainContentAudio(allowAutoPlay)
+  fun loadMainContentAudio(allowAutoPlay: Boolean, reloadingContent: Boolean) =
+    viewModel.loadMainContentAudio(allowAutoPlay, reloadingContent)
 
   fun loadFeedbackAudio(contentId: String, allowAutoPlay: Boolean) =
     viewModel.loadFeedbackAudio(contentId, allowAutoPlay)
@@ -255,7 +257,8 @@ class AudioFragmentPresenter @Inject constructor(
     audioButtonListener.showAudioStreamingOn()
     audioButtonListener.scrollToTop()
     if (feedbackId == null) {
-      loadMainContentAudio(true)
+      // This isn't reloading content since it's the first case of the content auto-playing.
+      loadMainContentAudio(allowAutoPlay = true, reloadingContent = false)
     } else {
       loadFeedbackAudio(feedbackId!!, true)
     }

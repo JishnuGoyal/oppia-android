@@ -9,48 +9,30 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import javax.inject.Inject
 import org.oppia.android.R
 import org.oppia.android.app.fragment.FragmentScope
-import org.oppia.android.app.model.Spotlight
-import org.oppia.android.app.spotlight.OverlayPositionAutomator
-import org.oppia.android.app.spotlight.SpotlightFragment
-import org.oppia.android.app.spotlight.SpotlightShape
-import org.oppia.android.app.spotlight.SpotlightTarget
 import org.oppia.android.app.translation.AppLanguageResourceHandler
-import org.oppia.android.app.viewmodel.ViewModelProvider
 import org.oppia.android.databinding.TopicFragmentBinding
 import org.oppia.android.domain.oppialogger.OppiaLogger
-import org.oppia.android.domain.spotlight.SpotlightStateController
-import org.oppia.android.util.platformparameter.EnableSpotlightUi
+import org.oppia.android.util.platformparameter.EnableExtraTopicTabsUi
 import org.oppia.android.util.platformparameter.PlatformParameterValue
-import org.oppia.android.util.system.OppiaClock
+import javax.inject.Inject
 
 /** The presenter for [TopicFragment]. */
 @FragmentScope
 class TopicFragmentPresenter @Inject constructor(
   private val activity: AppCompatActivity,
   private val fragment: Fragment,
-  private val viewModelProvider: ViewModelProvider<TopicViewModel>,
+  private val viewModel: TopicViewModel,
   private val oppiaLogger: OppiaLogger,
-  private val oppiaClock: OppiaClock,
-  private val spotlightStateController: SpotlightStateController,
-  @EnableSpotlightUi val enableSpotlightUi: PlatformParameterValue<Boolean>,
-  @EnablePracticeTab private val enablePracticeTab: Boolean,
-  private val resourceHandler: AppLanguageResourceHandler,
-  private val spotlightFragment: SpotlightFragment
+  @EnableExtraTopicTabsUi private val enableExtraTopicTabsUi: PlatformParameterValue<Boolean>,
+  private val resourceHandler: AppLanguageResourceHandler
 ) {
   private lateinit var tabLayout: TabLayout
   private var internalProfileId: Int = -1
   private lateinit var topicId: String
   private lateinit var storyId: String
   private lateinit var viewPager: ViewPager2
-  private lateinit var overlayBinding: Any
-  private lateinit var binding: TopicFragmentBinding
-
-  private fun getTab(tab: TopicTab): View {
-    return tabLayout.getTabAt(tab.ordinal)!!.view
-  }
 
   fun handleCreateView(
     inflater: LayoutInflater,
@@ -60,7 +42,7 @@ class TopicFragmentPresenter @Inject constructor(
     storyId: String,
     isConfigChanged: Boolean
   ): View? {
-    binding = TopicFragmentBinding.inflate(
+    val binding = TopicFragmentBinding.inflate(
       inflater,
       container,
       /* attachToRoot= */ false
@@ -76,43 +58,43 @@ class TopicFragmentPresenter @Inject constructor(
       (activity as TopicActivity).finish()
     }
 
-    binding.topicToolbar.setOnClickListener {
-      binding.topicToolbarTitle.isSelected = true
+    binding.topicToolbarTitle.setOnClickListener {
+      binding.topicMarqueeView.startMarquee()
     }
 
-//    spotlightOverlayPositionAutomator = OverlayPositionAutomator(activity, fragment)
-
-    val viewModel = getTopicViewModel()
     viewModel.setInternalProfileId(internalProfileId)
     viewModel.setTopicId(topicId)
     binding.viewModel = viewModel
 
     setUpViewPager(viewPager, topicId, isConfigChanged)
-
     return binding.root
   }
 
   private fun setCurrentTab(tab: TopicTab) {
-    viewPager.setCurrentItem(tab.ordinal, true)
+    viewPager.setCurrentItem(computeTabPosition(tab), true)
     logTopicEvents(tab)
+  }
+
+  private fun computeTabPosition(tab: TopicTab): Int {
+    return if (enableExtraTopicTabsUi.value) tab.positionWithFourTabs else tab.positionWithTwoTabs
   }
 
   private fun setUpViewPager(viewPager2: ViewPager2, topicId: String, isConfigChanged: Boolean) {
     val adapter =
-      ViewPagerAdapter(fragment, internalProfileId, topicId, storyId, enablePracticeTab)
+      ViewPagerAdapter(fragment, internalProfileId, topicId, storyId, enableExtraTopicTabsUi.value)
     viewPager2.adapter = adapter
     TabLayoutMediator(tabLayout, viewPager2) { tab, position ->
-      val topicTab = TopicTab.getTabForPosition(position, enablePracticeTab)
+      val topicTab = TopicTab.getTabForPosition(position, enableExtraTopicTabsUi.value)
       tab.text = resourceHandler.getStringInLocale(topicTab.tabLabelResId)
       tab.icon = ContextCompat.getDrawable(activity, topicTab.tabIconResId)
     }.attach()
     if (!isConfigChanged && topicId.isNotEmpty()) {
-      setCurrentTab(if (storyId.isNotEmpty()) TopicTab.LESSONS else TopicTab.INFO)
+      if (enableExtraTopicTabsUi.value) {
+        setCurrentTab(if (storyId.isNotEmpty()) TopicTab.LESSONS else TopicTab.INFO)
+      } else {
+        setCurrentTab(TopicTab.LESSONS)
+      }
     }
-  }
-
-  private fun getTopicViewModel(): TopicViewModel {
-    return viewModelProvider.getForFragment(fragment, TopicViewModel::class.java)
   }
 
   private fun logTopicEvents(tab: TopicTab) {
@@ -125,117 +107,18 @@ class TopicFragmentPresenter @Inject constructor(
   }
 
   private fun logInfoFragmentEvent(topicId: String) {
-    oppiaLogger.logTransitionEvent(
-      oppiaClock.getCurrentTimeMs(),
-      oppiaLogger.createOpenInfoTabContext(topicId)
-    )
+    oppiaLogger.logImportantEvent(oppiaLogger.createOpenInfoTabContext(topicId))
   }
 
   private fun logLessonsFragmentEvent(topicId: String) {
-    oppiaLogger.logTransitionEvent(
-      oppiaClock.getCurrentTimeMs(),
-      oppiaLogger.createOpenLessonsTabContext(topicId)
-    )
+    oppiaLogger.logImportantEvent(oppiaLogger.createOpenLessonsTabContext(topicId))
   }
 
   private fun logPracticeFragmentEvent(topicId: String) {
-    oppiaLogger.logTransitionEvent(
-      oppiaClock.getCurrentTimeMs(),
-      oppiaLogger.createOpenPracticeTabContext(topicId)
-    )
+    oppiaLogger.logImportantEvent(oppiaLogger.createOpenPracticeTabContext(topicId))
   }
 
   private fun logRevisionFragmentEvent(topicId: String) {
-    oppiaLogger.logTransitionEvent(
-      oppiaClock.getCurrentTimeMs(),
-      oppiaLogger.createOpenRevisionTabContext(topicId)
-    )
+    oppiaLogger.logImportantEvent(oppiaLogger.createOpenRevisionTabContext(topicId))
   }
-
-  fun startSpotlight() {
-    val arrayList: ArrayList<SpotlightTarget> = arrayListOf(
-      SpotlightTarget(
-        getTab(TopicTab.LESSONS),
-        "hello",
-        SpotlightShape.RoundedRectangle,
-        Spotlight.FeatureCase.TOPIC_LESSON_TAB
-      )
-    )
-
-    spotlightFragment.initialiseTargetList(arrayList)
-    activity.supportFragmentManager.beginTransaction()
-      .add(spotlightFragment, "")
-      .commit()
-  }
-
-//  fun retrieveCheckpointAndInitializeSpotlight() {
-////    val targets = ArrayList<Target>()
-//
-//    val profileId = ProfileId.newBuilder()
-//      .setInternalId(internalProfileId)
-//      .build()
-//    val checkpointLiveData = spotlightStateController.retrieveSpotlightViewState(
-//      profileId,
-//      SpotlightActivity.TOPIC_ACTIVITY
-//    ).toLiveData()
-//
-//    checkpointLiveData.observe(
-//      fragment,
-//      object : Observer<AsyncResult<Any>> {
-//        override fun onChanged(it: AsyncResult<Any>?) {
-//          if (it is AsyncResult.Success) {
-//            checkpointLiveData.removeObserver(this)
-//            val spotlightState = (it.value as TopicSpotlightCheckpoint).spotlightState
-//            if (spotlightState == SpotlightState.SPOTLIGHT_STATE_COMPLETED ||
-//              spotlightState == SpotlightState.SPOTLIGHT_STATE_DISMISSED
-//            ) {
-//              return
-//            } else if (spotlightState == SpotlightState.SPOTLIGHT_STATE_PARTIAL) {
-//              val lastScreenViewed = (it.value as TopicSpotlightCheckpoint).lastScreenViewed
-//              when (lastScreenViewed) {
-//                TopicSpotlightCheckpoint.LastScreenViewed.INFO_TAB_SPOTLIGHT -> {
-////                  targets.add(lessonsTabSpotlightTarget)
-////                  targets.add(practiceTabSpotlightTarget)
-////                  targets.add(revisionTabSpotlightTarget)
-////                  spotlightOverlayPositionAutomator.startSpotlight(targets)
-//                }
-//                TopicSpotlightCheckpoint.LastScreenViewed.LESSONS_TAB_SPOTLIGHT -> {
-////                  targets.add(practiceTabSpotlightTarget)
-////                  targets.add(revisionTabSpotlightTarget)
-////                  spotlightOverlayPositionAutomator.startSpotlight(targets)
-//                }
-//                TopicSpotlightCheckpoint.LastScreenViewed.PRACTICE_TAB_SPOTLIGHT -> {
-////                  targets.add(revisionTabSpotlightTarget)
-////                  spotlightOverlayPositionAutomator.startSpotlight(targets)
-//                }
-//              }
-//            } else if (spotlightState == SpotlightState.SPOTLIGHT_STATE_UNKNOWN) {
-//              spotlightOverlayPositionAutomator.createTarget(
-//                getTab(TopicTab.INFO),
-//                "INFO tab...",
-//                OverlayPositionAutomator.Companion.SpotlightShape.RoundedRectangle
-//              )
-//              spotlightOverlayPositionAutomator.createTarget(
-//                getTab(TopicTab.LESSONS),
-//                "LESSONS tab...",
-//                OverlayPositionAutomator.Companion.SpotlightShape.RoundedRectangle
-//              )
-//              spotlightOverlayPositionAutomator.createTarget(
-//                getTab(TopicTab.PRACTICE),
-//                "PRACTICE tab...",
-//                OverlayPositionAutomator.Companion.SpotlightShape.RoundedRectangle
-//              )
-//              spotlightOverlayPositionAutomator.createTarget(
-//                getTab(TopicTab.REVISION),
-//                "REVISION tab...",
-//                OverlayPositionAutomator.Companion.SpotlightShape.RoundedRectangle
-//              )
-//              spotlightOverlayPositionAutomator.startSpotlight()
-//            }
-//          }
-//        }
-//      }
-//    )
-//  }
-
 }

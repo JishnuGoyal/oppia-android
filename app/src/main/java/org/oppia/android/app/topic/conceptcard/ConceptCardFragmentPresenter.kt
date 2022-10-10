@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment
 import org.oppia.android.R
 import org.oppia.android.app.fragment.FragmentScope
 import org.oppia.android.app.model.ProfileId
+import org.oppia.android.app.translation.AppLanguageResourceHandler
 import org.oppia.android.app.viewmodel.ViewModelProvider
 import org.oppia.android.databinding.ConceptCardFragmentBinding
 import org.oppia.android.domain.oppialogger.OppiaLogger
@@ -14,7 +15,6 @@ import org.oppia.android.domain.translation.TranslationController
 import org.oppia.android.util.gcsresource.DefaultResourceBucketName
 import org.oppia.android.util.parser.html.ConceptCardHtmlParserEntityType
 import org.oppia.android.util.parser.html.HtmlParser
-import org.oppia.android.util.system.OppiaClock
 import javax.inject.Inject
 
 /** Presenter for [ConceptCardFragment], sets up bindings from ViewModel */
@@ -22,12 +22,12 @@ import javax.inject.Inject
 class ConceptCardFragmentPresenter @Inject constructor(
   private val fragment: Fragment,
   private val oppiaLogger: OppiaLogger,
-  private val oppiaClock: OppiaClock,
   private val htmlParserFactory: HtmlParser.Factory,
   @ConceptCardHtmlParserEntityType private val entityType: String,
   @DefaultResourceBucketName private val resourceBucketName: String,
   private val viewModelProvider: ViewModelProvider<ConceptCardViewModel>,
-  private val translationController: TranslationController
+  private val translationController: TranslationController,
+  private val appLanguageResourceHandler: AppLanguageResourceHandler
 ) {
   /**
    * Sets up data binding and toolbar.
@@ -72,8 +72,16 @@ class ConceptCardFragmentPresenter @Inject constructor(
             ephemeralConceptCard.writtenTranslationContext
           )
         view.text = htmlParserFactory
-          .create(resourceBucketName, entityType, skillId, imageCenterAlign = true)
-          .parseOppiaHtml(explanationHtml, view)
+          .create(
+            resourceBucketName,
+            entityType,
+            skillId,
+            imageCenterAlign = true,
+            displayLocale = appLanguageResourceHandler.getDisplayLocale()
+          )
+          .parseOppiaHtml(
+            explanationHtml, view
+          )
       }
     )
 
@@ -85,9 +93,6 @@ class ConceptCardFragmentPresenter @Inject constructor(
   }
 
   private fun logConceptCardEvent(skillId: String) {
-    oppiaLogger.logTransitionEvent(
-      oppiaClock.getCurrentTimeMs(),
-      oppiaLogger.createOpenConceptCardContext(skillId)
-    )
+    oppiaLogger.logImportantEvent(oppiaLogger.createOpenConceptCardContext(skillId))
   }
 }

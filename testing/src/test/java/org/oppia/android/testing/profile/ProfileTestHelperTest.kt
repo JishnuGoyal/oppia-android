@@ -22,6 +22,10 @@ import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
 import org.oppia.android.domain.oppialogger.LogStorageModule
+import org.oppia.android.domain.oppialogger.LoggingIdentifierModule
+import org.oppia.android.domain.oppialogger.analytics.ApplicationLifecycleModule
+import org.oppia.android.domain.platformparameter.PlatformParameterModule
+import org.oppia.android.domain.platformparameter.PlatformParameterSingletonModule
 import org.oppia.android.domain.profile.ProfileManagementController
 import org.oppia.android.testing.TestLogReportingModule
 import org.oppia.android.testing.data.AsyncResultSubject.Companion.assertThat
@@ -38,6 +42,7 @@ import org.oppia.android.util.logging.EnableConsoleLog
 import org.oppia.android.util.logging.EnableFileLog
 import org.oppia.android.util.logging.GlobalLogLevel
 import org.oppia.android.util.logging.LogLevel
+import org.oppia.android.util.logging.SyncStatusModule
 import org.oppia.android.util.networking.NetworkConnectionUtilDebugModule
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
@@ -117,36 +122,24 @@ class ProfileTestHelperTest {
   @Test
   fun testLogIntoAdmin_initializeProfiles_logIntoAdmin_checkIsSuccessful() {
     profileTestHelper.initializeProfiles()
-
-    profileTestHelper.logIntoAdmin().observeForever(mockUpdateResultObserver)
-    testCoroutineDispatchers.runCurrent()
-
-    verify(mockUpdateResultObserver, atLeastOnce()).onChanged(updateResultCaptor.capture())
-    assertThat(updateResultCaptor.value).isSuccess()
+    val loginProvider = profileTestHelper.logIntoAdmin()
+    monitorFactory.waitForNextSuccessfulResult(loginProvider)
     assertThat(profileManagementController.getCurrentProfileId().internalId).isEqualTo(0)
   }
 
   @Test
   fun testLogIntoUser_initializeProfiles_logIntoUser_checkIsSuccessful() {
     profileTestHelper.initializeProfiles()
-
-    profileTestHelper.logIntoUser().observeForever(mockUpdateResultObserver)
-    testCoroutineDispatchers.runCurrent()
-
-    verify(mockUpdateResultObserver, atLeastOnce()).onChanged(updateResultCaptor.capture())
-    assertThat(updateResultCaptor.value).isSuccess()
+    val loginProvider = profileTestHelper.logIntoUser()
+    monitorFactory.waitForNextSuccessfulResult(loginProvider)
     assertThat(profileManagementController.getCurrentProfileId().internalId).isEqualTo(1)
   }
 
   @Test
   fun testLogIntoNewUser_initializeProfiles_logIntoUser_checkIsSuccessful() {
     profileTestHelper.initializeProfiles()
-
-    profileTestHelper.logIntoNewUser().observeForever(mockUpdateResultObserver)
-    testCoroutineDispatchers.runCurrent()
-
-    verify(mockUpdateResultObserver, atLeastOnce()).onChanged(updateResultCaptor.capture())
-    assertThat(updateResultCaptor.value).isSuccess()
+    val loginProvider = profileTestHelper.logIntoNewUser()
+    monitorFactory.waitForNextSuccessfulResult(loginProvider)
     assertThat(profileManagementController.getCurrentProfileId().internalId).isEqualTo(2)
   }
 
@@ -180,7 +173,9 @@ class ProfileTestHelperTest {
     modules = [
       TestModule::class, TestLogReportingModule::class, LogStorageModule::class,
       TestDispatcherModule::class, RobolectricModule::class, FakeOppiaClockModule::class,
-      NetworkConnectionUtilDebugModule::class, LocaleProdModule::class
+      NetworkConnectionUtilDebugModule::class, LocaleProdModule::class,
+      LoggingIdentifierModule::class, ApplicationLifecycleModule::class, SyncStatusModule::class,
+      PlatformParameterModule::class, PlatformParameterSingletonModule::class
     ]
   )
   interface TestApplicationComponent : DataProvidersInjector {

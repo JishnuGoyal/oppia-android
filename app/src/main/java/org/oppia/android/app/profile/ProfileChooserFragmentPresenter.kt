@@ -16,6 +16,7 @@ import org.oppia.android.R
 import org.oppia.android.app.administratorcontrols.AdministratorControlsActivity
 import org.oppia.android.app.fragment.FragmentScope
 import org.oppia.android.app.home.HomeActivity
+import org.oppia.android.app.model.Profile
 import org.oppia.android.app.model.ProfileChooserUiModel
 import org.oppia.android.app.recyclerview.BindableAdapter
 import org.oppia.android.app.viewmodel.ViewModelProvider
@@ -27,7 +28,6 @@ import org.oppia.android.domain.profile.ProfileManagementController
 import org.oppia.android.util.data.AsyncResult
 import org.oppia.android.util.data.DataProviders.Companion.toLiveData
 import org.oppia.android.util.statusbar.StatusBarColor
-import org.oppia.android.util.system.OppiaClock
 import javax.inject.Inject
 
 private val COLORS_LIST = listOf(
@@ -66,7 +66,7 @@ class ProfileChooserFragmentPresenter @Inject constructor(
   private val viewModelProvider: ViewModelProvider<ProfileChooserViewModel>,
   private val profileManagementController: ProfileManagementController,
   private val oppiaLogger: OppiaLogger,
-  private val oppiaClock: OppiaClock
+  private val multiTypeBuilderFactory: BindableAdapter.MultiTypeBuilder.Factory
 ) {
   private lateinit var binding: ProfileChooserFragmentBinding
   val hasProfileEverBeenAddedValue = ObservableField<Boolean>(true)
@@ -149,10 +149,10 @@ class ProfileChooserFragmentPresenter @Inject constructor(
   }
 
   private fun createRecyclerViewAdapter(): BindableAdapter<ProfileChooserUiModel> {
-    return BindableAdapter.MultiTypeBuilder
-      .newBuilder<ProfileChooserUiModel, ProfileChooserUiModel.ModelTypeCase>(
-        ProfileChooserUiModel::getModelTypeCase
-      )
+    return multiTypeBuilderFactory.create<ProfileChooserUiModel,
+      ProfileChooserUiModel.ModelTypeCase>(
+      ProfileChooserUiModel::getModelTypeCase
+    )
       .registerViewDataBinderWithSameModelType(
         viewType = ProfileChooserUiModel.ModelTypeCase.PROFILE,
         inflateDataBinding = ProfileChooserProfileViewBinding::inflate,
@@ -173,6 +173,7 @@ class ProfileChooserFragmentPresenter @Inject constructor(
     binding.viewModel = model
     binding.hasProfileEverBeenAddedValue = hasProfileEverBeenAddedValue
     binding.profileChooserItem.setOnClickListener {
+      updateLearnerIdIfAbsent(model.profile)
       if (model.profile.pin.isEmpty()) {
         profileManagementController.loginToProfile(model.profile.id).toLiveData().observe(
           fragment,
@@ -251,8 +252,13 @@ class ProfileChooserFragmentPresenter @Inject constructor(
   }
 
   private fun logProfileChooserEvent() {
-    oppiaLogger.logTransitionEvent(
-      oppiaClock.getCurrentTimeMs(), eventContext = oppiaLogger.createOpenProfileChooserContext()
-    )
+    oppiaLogger.logImportantEvent(oppiaLogger.createOpenProfileChooserContext())
+  }
+
+  private fun updateLearnerIdIfAbsent(profile: Profile) {
+    if (profile.learnerId.isNullOrEmpty()) {
+      // TODO(#4345): Block on the following data provider before allowing the user to log in.
+      profileManagementController.initializeLearnerId(profile.id)
+    }
   }
 }

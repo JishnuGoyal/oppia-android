@@ -56,6 +56,7 @@ class StateRetriever @Inject constructor() {
           createWrittenTranslationMappingsFromJson(stateJson.getJSONObject("written_translations"))
         )
       }
+      stateJson.optString("linked_skill_id")?.let { linkedSkillId = it }
     }.build()
 
   // Creates an interaction from JSON
@@ -726,6 +727,7 @@ class StateRetriever @Inject constructor() {
   private fun parseLabeledRegion(jsonObject: JSONObject): LabeledRegion {
     return LabeledRegion.newBuilder()
       .setLabel(jsonObject.getStringFromObject("label"))
+      .setContentDescription(jsonObject.getStringFromObject("contentDescription"))
       .setRegion(parseRegion(jsonObject.getJSONObject("region")))
       .build()
   }

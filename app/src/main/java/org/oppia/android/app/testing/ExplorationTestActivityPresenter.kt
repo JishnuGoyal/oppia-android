@@ -9,7 +9,8 @@ import org.oppia.android.app.activity.ActivityScope
 import org.oppia.android.app.fragment.FragmentComponentImpl
 import org.oppia.android.app.fragment.InjectableFragment
 import org.oppia.android.app.home.RouteToExplorationListener
-import org.oppia.android.app.model.ExplorationCheckpoint
+import org.oppia.android.app.model.ExplorationActivityParams
+import org.oppia.android.app.model.ProfileId
 import org.oppia.android.app.utility.SplitScreenManager
 import org.oppia.android.domain.exploration.ExplorationDataController
 import org.oppia.android.domain.oppialogger.OppiaLogger
@@ -48,14 +49,12 @@ class ExplorationTestActivityPresenter @Inject constructor(
   }
 
   private fun playExplorationButton() {
-    explorationDataController.stopPlayingExploration()
-    explorationDataController.startPlayingExploration(
+    explorationDataController.stopPlayingExploration(isCompletion = false)
+    explorationDataController.replayExploration(
       INTERNAL_PROFILE_ID,
       TOPIC_ID,
       STORY_ID,
-      EXPLORATION_ID,
-      shouldSavePartialProgress = false,
-      explorationCheckpoint = ExplorationCheckpoint.getDefaultInstance()
+      EXPLORATION_ID
     ).toLiveData().observe(
       activity,
       Observer<AsyncResult<Any?>> { result ->
@@ -67,11 +66,11 @@ class ExplorationTestActivityPresenter @Inject constructor(
           is AsyncResult.Success -> {
             oppiaLogger.d(TAG_EXPLORATION_TEST_ACTIVITY, "Successfully loaded exploration")
             routeToExplorationListener.routeToExploration(
-              INTERNAL_PROFILE_ID,
+              ProfileId.newBuilder().apply { internalId = INTERNAL_PROFILE_ID }.build(),
               TOPIC_ID,
               STORY_ID,
               EXPLORATION_ID,
-              backflowScreen = null,
+              parentScreen = ExplorationActivityParams.ParentScreen.PARENT_SCREEN_UNSPECIFIED,
               isCheckpointingEnabled = false
             )
           }

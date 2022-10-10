@@ -7,47 +7,37 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.viewpager2.widget.ViewPager2
-import com.takusemba.spotlight.Spotlight
-import java.util.*
-import javax.inject.Inject
 import org.oppia.android.R
 import org.oppia.android.app.fragment.FragmentScope
-import org.oppia.android.app.model.ProfileId
-import org.oppia.android.app.model.SpotlightViewState
+import org.oppia.android.app.model.PolicyPage
+import org.oppia.android.app.policies.RouteToPoliciesListener
 import org.oppia.android.app.recyclerview.BindableAdapter
-import org.oppia.android.app.spotlight.SpotlightFragment
-import org.oppia.android.app.spotlight.SpotlightShape
-import org.oppia.android.app.spotlight.SpotlightTarget
 import org.oppia.android.app.translation.AppLanguageResourceHandler
 import org.oppia.android.app.viewmodel.ViewModelProvider
 import org.oppia.android.databinding.OnboardingFragmentBinding
 import org.oppia.android.databinding.OnboardingSlideBinding
 import org.oppia.android.databinding.OnboardingSlideFinalBinding
-import org.oppia.android.databinding.OverlayBinding
-import org.oppia.android.domain.spotlight.SpotlightStateController
-import org.oppia.android.util.data.AsyncResult
-import org.oppia.android.util.data.DataProviders.Companion.toLiveData
+import org.oppia.android.util.parser.html.HtmlParser
+import org.oppia.android.util.parser.html.PolicyType
 import org.oppia.android.util.statusbar.StatusBarColor
+import javax.inject.Inject
 
 /** The presenter for [OnboardingFragment]. */
 @FragmentScope
 class OnboardingFragmentPresenter @Inject constructor(
-  private val spotlightStateController: SpotlightStateController,
   private val activity: AppCompatActivity,
   private val fragment: Fragment,
   private val viewModelProvider: ViewModelProvider<OnboardingViewModel>,
   private val viewModelProviderFinalSlide: ViewModelProvider<OnboardingSlideFinalViewModel>,
   private val resourceHandler: AppLanguageResourceHandler,
-  private val spotlightFragment: SpotlightFragment
-) : OnboardingNavigationListener, SpotlightNavigationListener {
+  private val htmlParserFactory: HtmlParser.Factory,
+  private val multiTypeBuilderFactory: BindableAdapter.MultiTypeBuilder.Factory
+) : OnboardingNavigationListener, HtmlParser.PolicyOppiaTagActionListener {
   private val dotsList = ArrayList<ImageView>()
   private lateinit var binding: OnboardingFragmentBinding
-  private lateinit var overlayBinding: OverlayBinding
-  private lateinit var spotlight: Spotlight
 
-  fun handleCreateView(inflater: LayoutInflater, container: ViewGroup?): View? {
+  fun handleCreateView(inflater: LayoutInflater, container: ViewGroup?): View {
     binding = OnboardingFragmentBinding.inflate(
       inflater,
       container,
@@ -60,14 +50,8 @@ class OnboardingFragmentPresenter @Inject constructor(
       it.presenter = this
       it.viewModel = getOnboardingViewModel()
     }
-//    overlayBinding = OverlayBinding.inflate(inflater, container, false)
-//    overlayBinding.let {
-//      it.lifecycleOwner = fragment
-//      it.presenter = this
-//    }
     setUpViewPager()
     addDots()
-
     return binding.root
   }
 
@@ -117,14 +101,13 @@ class OnboardingFragmentPresenter @Inject constructor(
   }
 
   private fun createViewPagerAdapter(): BindableAdapter<OnboardingViewPagerViewModel> {
-    return BindableAdapter.MultiTypeBuilder
-      .newBuilder<OnboardingViewPagerViewModel, ViewType> { viewModel ->
-        when (viewModel) {
-          is OnboardingSlideViewModel -> ViewType.ONBOARDING_MIDDLE_SLIDE
-          is OnboardingSlideFinalViewModel -> ViewType.ONBOARDING_FINAL_SLIDE
-          else -> throw IllegalArgumentException("Encountered unexpected view model: $viewModel")
-        }
+    return multiTypeBuilderFactory.create<OnboardingViewPagerViewModel, ViewType> { viewModel ->
+      when (viewModel) {
+        is OnboardingSlideViewModel -> ViewType.ONBOARDING_MIDDLE_SLIDE
+        is OnboardingSlideFinalViewModel -> ViewType.ONBOARDING_FINAL_SLIDE
+        else -> throw IllegalArgumentException("Encountered unexpected view model: $viewModel")
       }
+    }
       .registerViewDataBinder(
         viewType = ViewType.ONBOARDING_MIDDLE_SLIDE,
         inflateDataBinding = OnboardingSlideBinding::inflate,
@@ -134,10 +117,41 @@ class OnboardingFragmentPresenter @Inject constructor(
       .registerViewDataBinder(
         viewType = ViewType.ONBOARDING_FINAL_SLIDE,
         inflateDataBinding = OnboardingSlideFinalBinding::inflate,
-        setViewModel = OnboardingSlideFinalBinding::setViewModel,
+        setViewModel = this::bindOnboardingSlideFinal,
         transformViewModel = { it as OnboardingSlideFinalViewModel }
       )
       .build()
+  }
+
+  private fun bindOnboardingSlideFinal(
+    binding: OnboardingSlideFinalBinding,
+    model: OnboardingSlideFinalViewModel
+  ) {
+    binding.viewModel = model
+
+    val completeString: String =
+      resourceHandler.getStringInLocaleWithWrapping(
+        R.string.agree_to_terms,
+        resourceHandler.getStringInLocale(R.string.app_name)
+      )
+    binding.slideTermsOfServiceAndPrivacyPolicyLinksTextView.text = htmlParserFactory.create(
+      policyOppiaTagActionListener = this,
+      displayLocale = resourceHandler.getDisplayLocale()
+    ).parseOppiaHtml(
+      completeString,
+      binding.slideTermsOfServiceAndPrivacyPolicyLinksTextView,
+      supportsLinks = true,
+      supportsConceptCards = false
+    )
+  }
+
+  override fun onPolicyPageLinkClicked(policyType: PolicyType) {
+    when (policyType) {
+      PolicyType.PRIVACY_POLICY ->
+        (activity as RouteToPoliciesListener).onRouteToPolicies(PolicyPage.PRIVACY_POLICY)
+      PolicyType.TERMS_OF_SERVICE ->
+        (activity as RouteToPoliciesListener).onRouteToPolicies(PolicyPage.TERMS_OF_SERVICE)
+    }
   }
 
   private fun getOnboardingSlideFinalViewModel(): OnboardingSlideFinalViewModel {
@@ -184,16 +198,6 @@ class OnboardingFragmentPresenter @Inject constructor(
 
   override fun clickOnSkip() {
     binding.onboardingSlideViewPager.currentItem = TOTAL_NUMBER_OF_SLIDES - 1
-  }
-
-  override fun clickOnDismiss() {
-    spotlight.finish()
-  }
-
-  override fun clickOnNextTip() {
-    // use this interface to start the next tip
-
-    spotlight.next()
   }
 
   override fun clickOnNext() {
@@ -244,24 +248,5 @@ class OnboardingFragmentPresenter @Inject constructor(
       val alphaValue = if (index == position) 1.0F else 0.3F
       dotsList[index].alpha = alphaValue
     }
-  }
-
-  fun computeLastSpotlightCheckpoint() {
-
-    val onboardingButtonSpotlight = SpotlightTarget(
-      binding.onboardingFragmentNextImageView,
-      "Next",
-      SpotlightShape.Circle,
-      org.oppia.android.app.model.Spotlight.FeatureCase.ONBOARDING_NEXT_BUTTON
-    )
-
-    val targetList = ArrayList<SpotlightTarget>()
-    targetList.add(onboardingButtonSpotlight)
-    spotlightFragment.initialiseTargetList(targetList)
-
-    activity.supportFragmentManager.beginTransaction()
-      .add(R.id.onboarding_fragment_placeholder, spotlightFragment)
-      .commit()
-    
   }
 }
