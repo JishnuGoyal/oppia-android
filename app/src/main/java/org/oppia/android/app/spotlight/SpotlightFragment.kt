@@ -2,7 +2,9 @@ package org.oppia.android.app.spotlight
 
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -36,7 +38,8 @@ class SpotlightFragment @Inject constructor(
 //    viewLifecycleOwner.lifecycleScope.launchWhenCreated {
 //        for (i in spotlightTargetList) {
 //          lifecycleScope.launchWhenCreated {
-            checkSpotlightViewState(spotlightTargetList[0])
+//            checkSpotlightViewState(spotlightTargetList[0])
+
 //          }
 //        }
 
@@ -44,6 +47,16 @@ class SpotlightFragment @Inject constructor(
 
 
 
+  }
+
+  override fun onCreateView(
+    inflater: LayoutInflater,
+    container: ViewGroup?,
+    savedInstanceState: Bundle?
+  ): View? {
+    overlayPositionAutomator.createTarget(spotlightTargetList[0])
+    overlayPositionAutomator.startSpotlight()
+    return super.onCreateView(inflater, container, savedInstanceState)
   }
 
 //  override fun onCreateView(

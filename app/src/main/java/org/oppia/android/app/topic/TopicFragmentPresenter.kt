@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.get
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
@@ -17,6 +18,10 @@ import org.oppia.android.domain.oppialogger.OppiaLogger
 import org.oppia.android.util.platformparameter.EnableExtraTopicTabsUi
 import org.oppia.android.util.platformparameter.PlatformParameterValue
 import javax.inject.Inject
+import org.oppia.android.app.model.Spotlight
+import org.oppia.android.app.spotlight.SpotlightFragment
+import org.oppia.android.app.spotlight.SpotlightShape
+import org.oppia.android.app.spotlight.SpotlightTarget
 
 /** The presenter for [TopicFragment]. */
 @FragmentScope
@@ -26,13 +31,30 @@ class TopicFragmentPresenter @Inject constructor(
   private val viewModel: TopicViewModel,
   private val oppiaLogger: OppiaLogger,
   @EnableExtraTopicTabsUi private val enableExtraTopicTabsUi: PlatformParameterValue<Boolean>,
-  private val resourceHandler: AppLanguageResourceHandler
+  private val resourceHandler: AppLanguageResourceHandler,
+  private val spotlightFragment: SpotlightFragment
 ) {
   private lateinit var tabLayout: TabLayout
   private var internalProfileId: Int = -1
   private lateinit var topicId: String
   private lateinit var storyId: String
   private lateinit var viewPager: ViewPager2
+
+  fun startSpotlight() {
+    val targetList = arrayListOf(
+      SpotlightTarget(
+        tabLayout.getTabAt(0)!!.view,
+        "hello",
+        SpotlightShape.RoundedRectangle,
+        Spotlight.FeatureCase.TOPIC_LESSON_TAB
+      )
+    )
+
+    spotlightFragment.initialiseTargetList(targetList)
+    fragment.childFragmentManager.beginTransaction()
+      .add(spotlightFragment, "")
+      .commit()
+  }
 
   fun handleCreateView(
     inflater: LayoutInflater,
