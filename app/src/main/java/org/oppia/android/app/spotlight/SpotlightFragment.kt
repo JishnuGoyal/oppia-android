@@ -7,7 +7,10 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.doOnLayout
+import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import com.takusemba.spotlight.OnSpotlightListener
@@ -78,6 +81,7 @@ class SpotlightFragment @Inject constructor(
 
   private fun checkSpotlightViewState(spotlightTarget: SpotlightTarget) {
 
+    Log.d("overlay", "inside checkSpotlightViewState()")
     val profileId = ProfileId.newBuilder()
       .setInternalId(123)
       .build()
@@ -90,7 +94,7 @@ class SpotlightFragment @Inject constructor(
 
     // use activity as observer because this fragment's view hasn't been created yet.
     featureViewStateLiveData.observe(
-      activity,
+      this,
       object : Observer<AsyncResult<SpotlightViewState>> {
         override fun onChanged(it: AsyncResult<SpotlightViewState>?) {
           if (it is AsyncResult.Success) {
@@ -102,10 +106,23 @@ class SpotlightFragment @Inject constructor(
 
               Log.d("overlay", viewState.toString())
               Log.d("overlay", "adding target ")
-              createTarget(spotlightTarget)
-              counter++
-              if (counter == spotlightTargetList.size) {
-                startSpotlight()
+              val placeholder = activity.findViewById<FrameLayout>(R.id.spotlight_fragment_placeholder)
+
+              Log.d("overlay", "outside doOnLayout, ${spotlightTarget.anchor.isAttachedToWindow} ")
+
+              spotlightTarget.anchor.post{
+                Log.d("overlay", "inside anchor.post, ${spotlightTarget.anchor.isAttachedToWindow}")
+                val location = IntArray(2)
+                spotlightTarget.anchor.getLocationInWindow(location)
+                Log.d("overlay", "WindowLocations: ${location[0]}, ${location[1]}, anchorWidth: ${spotlightTarget.anchor.width}, anchorHeight: ${spotlightTarget.anchor.height}")
+              }
+              spotlightTarget.anchor.post{
+                Log.d("overlay", "inside doOnLayout, ${spotlightTarget.anchor.isAttachedToWindow}")
+                createTarget(spotlightTarget)
+                counter++
+                if (counter == spotlightTargetList.size) {
+                  startSpotlight()
+                }
               }
               featureViewStateLiveData.removeObserver(this)
             }
@@ -116,9 +133,17 @@ class SpotlightFragment @Inject constructor(
     )
   }
 
+  override fun onResume() {
+    super.onResume()
+    Log.d("overlay", "inside onResume")
+  }
+
   private fun createTarget(
     spotlightTarget: SpotlightTarget
   ) {
+    spotlightTarget.selfInit()
+    Log.d("overlay", "Find View By Id Next btn: ${activity.findViewById<View>(R.id.onboarding_fragment_next_image_view)} ")
+    Log.d("overlay", "Find View By Id Skip btn: ${activity.findViewById<View>(R.id.skip_text_view)} ")
     spotlightTarget.logParams()
 
     val target = Target.Builder()
@@ -419,7 +444,7 @@ data class SpotlightTarget(
   val anchorCentreX = calculateAnchorCentreX()
   val anchorCentreY = calculateAnchorCentreY()
 
-  init {
+  fun selfInit() {
     calculateAnchorLeft()
     calculateAnchorTop()
     calculateAnchorHeight()
@@ -430,21 +455,23 @@ data class SpotlightTarget(
 
   private fun calculateAnchorLeft(): Float {
     val location = IntArray(2)
-    anchor.getLocationOnScreen(location)
+    anchor.getLocationInWindow(location)
     val x = location[0]
     return x.toFloat()
   }
 
   private fun calculateAnchorTop(): Float {
     val location = IntArray(2)
-    anchor.getLocationOnScreen(location)
+    anchor.getLocationInWindow(location)
     val y = location[1]
     return y.toFloat()
   }
 
   fun logParams() {
-    Log.d("overlay", "anchorLeft: " + anchorLeft.toString())
-    Log.d("overlay", "anchorTop: " + anchorTop.toString())
+    Log.d("overlay", "anchorLeftOnScreen: $anchorLeft, anchor.left: ${anchor.left}")
+    Log.d("overlay", "anchorTop: $anchorTop, anchor.Top: ${anchor.top}")
+    Log.d("overlay", "anchorHeight: $anchorHeight, anchor.Height: ${anchor.height}")
+    Log.d("overlay", "anchor: $anchor")
   }
 
   private fun calculateAnchorHeight(): Int {

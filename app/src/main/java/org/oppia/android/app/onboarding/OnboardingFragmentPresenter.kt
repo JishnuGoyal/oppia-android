@@ -248,7 +248,7 @@ class OnboardingFragmentPresenter @Inject constructor(
 
   fun computeLastSpotlightCheckpoint() {
 
-    binding.onboardingFragmentNextImageView.post {
+//    binding.onboardingFragmentNextImageView.post {
       val onboardingButtonSpotlight = SpotlightTarget(
         binding.onboardingFragmentNextImageView,
         "Next",
@@ -271,9 +271,9 @@ class OnboardingFragmentPresenter @Inject constructor(
 
         spotlightFragment.initialiseTargetList(targetList)
         activity.supportFragmentManager.beginTransaction()
-          .add(R.id.onboarding_fragment_placeholder, spotlightFragment)
+          .add(R.id.spotlight_fragment_placeholder, spotlightFragment)
           .commit()
 
     }
-  }
+//  }
 }
