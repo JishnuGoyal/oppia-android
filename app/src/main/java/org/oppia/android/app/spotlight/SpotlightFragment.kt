@@ -7,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import com.takusemba.spotlight.OnSpotlightListener
 import com.takusemba.spotlight.OnTargetListener
@@ -25,19 +24,22 @@ import org.oppia.android.databinding.BottomRightOverlayBinding
 import org.oppia.android.databinding.TopLeftOverlayBinding
 import org.oppia.android.databinding.TopRightOverlayBinding
 import org.oppia.android.domain.spotlight.SpotlightStateController
-import org.oppia.android.util.accessibility.AccessibilityServiceImpl
 import org.oppia.android.util.data.AsyncResult
 import org.oppia.android.util.data.DataProviders.Companion.toLiveData
 import java.util.Locale
 import javax.inject.Inject
+import org.oppia.android.app.fragment.FragmentComponentImpl
+import org.oppia.android.app.fragment.InjectableFragment
+import org.oppia.android.util.accessibility.AccessibilityService
 
-class SpotlightFragment @Inject constructor(
-  private val activity: AppCompatActivity,
-  private val spotlightStateController: SpotlightStateController,
-  private val accessibilityServiceImpl: AccessibilityServiceImpl
-) : Fragment(), SpotlightNavigationListener {
-  private var targetList = ArrayList<Target>()
-  private var spotlightTargetList = ArrayList<SpotlightTarget>()
+class SpotlightFragment : InjectableFragment(), SpotlightNavigationListener {
+  // TODO: Move these to a presenter.
+  @Inject lateinit var activity: AppCompatActivity
+  @Inject lateinit var spotlightStateController: SpotlightStateController
+  @Inject lateinit var accessibilityServiceImpl: AccessibilityService
+
+  private val targetList = mutableListOf<Target>()
+  private lateinit var spotlightTargetList: List<SpotlightTargetReference>
   private lateinit var spotlight: Spotlight
   private var screenHeight: Int = 0
   private var screenWidth: Int = 0
@@ -54,7 +56,8 @@ class SpotlightFragment @Inject constructor(
     screenWidth = displayMetrics.widthPixels
   }
 
-  fun initialiseTargetList(spotlightTargets: ArrayList<SpotlightTarget>, profileId: Int) {
+  fun initialiseTargetList(spotlightTargets: List<SpotlightTargetReference>, profileId: Int) {
+    android.util.Log.e("@@@@@", "want to show: ${spotlightTargets.first().anchorViewId}")
     spotlightTargetList = spotlightTargets
     internalProfileId = profileId
   }
@@ -62,19 +65,22 @@ class SpotlightFragment @Inject constructor(
   // since this fragment does not have any view to inflate yet, all the tasks should be done here.
   override fun onAttach(context: Context) {
     super.onAttach(context)
+    (fragmentComponent as FragmentComponentImpl).inject(this)
+    android.util.Log.e("@@@@@", "onAttach, screenreader on: ${accessibilityServiceImpl.isScreenReaderEnabled()}")
 
     if (accessibilityServiceImpl.isScreenReaderEnabled()) {
       activity.supportFragmentManager.beginTransaction().remove(this)
     } else {
       calculateScreenSize()
       checkIsRTL()
+      android.util.Log.e("@@@@@", "targets: ${spotlightTargetList.size}")
       spotlightTargetList.forEachIndexed { _, spotlightTarget ->
         checkSpotlightViewState(spotlightTarget)
       }
     }
   }
 
-  private fun checkSpotlightViewState(spotlightTarget: SpotlightTarget) {
+  private fun checkSpotlightViewState(spotlightTargetReference: SpotlightTargetReference) {
     var counter = 0
     val profileId = ProfileId.newBuilder()
       .setInternalId(internalProfileId)
@@ -83,20 +89,23 @@ class SpotlightFragment @Inject constructor(
     val featureViewStateLiveData =
       spotlightStateController.retrieveSpotlightViewState(
         profileId,
-        spotlightTarget.feature
+        spotlightTargetReference.feature
       ).toLiveData()
 
     // use activity as observer because this fragment's view hasn't been created yet.
+    android.util.Log.e("@@@@@", "register with $featureViewStateLiveData")
     featureViewStateLiveData.observe(
       activity,
       object : Observer<AsyncResult<SpotlightViewState>> {
         override fun onChanged(it: AsyncResult<SpotlightViewState>?) {
+          android.util.Log.e("@@@@@", "receive result: $it")
           if (it is AsyncResult.Success) {
             val viewState = (it.value)
+            android.util.Log.e("@@@@@", "attempt to show: ${spotlightTargetReference.anchorViewId} (state: $viewState)")
             if (viewState == SpotlightViewState.SPOTLIGHT_SEEN) {
               return
             } else if (viewState == SpotlightViewState.SPOTLIGHT_NOT_SEEN) {
-              createTarget(spotlightTarget)
+              createTarget(spotlightTargetReference.resolveTarget(activity))
               counter++
               if (counter == spotlightTargetList.size) {
                 startSpotlight()
@@ -109,11 +118,9 @@ class SpotlightFragment @Inject constructor(
     )
   }
 
-  private fun createTarget(
-    spotlightTarget: SpotlightTarget
-  ) {
+  private fun createTarget(spotlightTarget: SpotlightTarget) {
     val target = Target.Builder()
-      .setAnchor(spotlightTarget.anchor)
+      .setAnchor(spotlightTarget.anchorCenter)
       .setShape(getShape(spotlightTarget))
       .setOverlay(requestOverlayResource(spotlightTarget))
       .setOnTargetListener(object : OnTargetListener {
@@ -157,16 +164,16 @@ class SpotlightFragment @Inject constructor(
     return when (spotlightTarget.shape) {
       SpotlightShape.RoundedRectangle -> {
         RoundedRectangle(
-          spotlightTarget.anchorHeight.toFloat(),
-          spotlightTarget.anchorWidth.toFloat(),
-          24f
+          spotlightTarget.anchorHeight,
+          spotlightTarget.anchorWidth,
+          radius = 24f
         )
       }
       SpotlightShape.Circle -> {
         return if (spotlightTarget.anchorHeight > spotlightTarget.anchorWidth) {
-          Circle((spotlightTarget.anchorHeight / 2).toFloat())
+          Circle(spotlightTarget.anchorHeight / 2)
         } else {
-          Circle((spotlightTarget.anchorWidth / 2).toFloat())
+          Circle(spotlightTarget.anchorWidth / 2)
         }
       }
     }
@@ -183,22 +190,22 @@ class SpotlightFragment @Inject constructor(
     return this.resources.getDimension(R.dimen.arrow_width)
   }
 
-  private fun getScreenCentreY(): Int {
+  private fun getScreenCenterY(): Int {
     return screenHeight / 2
   }
 
-  private fun getScreenCentreX(): Int {
+  private fun getScreenCenterX(): Int {
     return screenWidth / 2
   }
 
   private fun calculateAnchorPosition(spotlightTarget: SpotlightTarget) {
-    anchorPosition = if (spotlightTarget.anchorCentreX > getScreenCentreX()) {
-      if (spotlightTarget.anchorCentreY > getScreenCentreY()) {
+    anchorPosition = if (spotlightTarget.anchorCenterX > getScreenCenterX()) {
+      if (spotlightTarget.anchorCenterY > getScreenCenterY()) {
         AnchorPosition.BottomRight
       } else {
         AnchorPosition.TopRight
       }
-    } else if (spotlightTarget.anchorCentreY > getScreenCentreY()) {
+    } else if (spotlightTarget.anchorCenterY > getScreenCenterY()) {
       AnchorPosition.BottomLeft
     } else {
       AnchorPosition.TopLeft
