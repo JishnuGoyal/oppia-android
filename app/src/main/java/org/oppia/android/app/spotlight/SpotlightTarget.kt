@@ -1,56 +1,48 @@
 package org.oppia.android.app.spotlight
 
-import android.view.View
+import android.app.Activity
+import android.graphics.PointF
+import android.graphics.RectF
+import androidx.annotation.IdRes
 
-data class SpotlightTarget(
-  val anchor: View,
+data class SpotlightTargetReference(
+  @IdRes val anchorViewId: Int,
   val hint: String = "",
   val shape: SpotlightShape = SpotlightShape.RoundedRectangle,
   val feature: org.oppia.android.app.model.Spotlight.FeatureCase
 ) {
-  val anchorLeft: Float = calculateAnchorLeft()
-  val anchorTop: Float = calculateAnchorTop()
-  val anchorHeight: Int = calculateAnchorHeight()
-  val anchorWidth: Int = calculateAnchorWidth()
-  val anchorCentreX = calculateAnchorCentreX()
-  val anchorCentreY = calculateAnchorCentreY()
-
-  init {
-    calculateAnchorLeft()
-    calculateAnchorTop()
-    calculateAnchorHeight()
-    calculateAnchorWidth()
-    calculateAnchorCentreX()
-    calculateAnchorCentreY()
-  }
-
-  private fun calculateAnchorLeft(): Float {
+  fun resolveTarget(activity: Activity): SpotlightTarget {
+    val anchorView = checkNotNull(activity.findViewById(anchorViewId)) {
+      "Failed to find expected spotlight anchor target for ID: $anchorViewId."
+    }
+    android.util.Log.e("@@@@@", "resolve to: $anchorView")
     val location = IntArray(2)
-    anchor.getLocationOnScreen(location)
-    val x = location[0]
-    return x.toFloat()
-  }
+    anchorView.getLocationOnScreen(location)
 
-  private fun calculateAnchorTop(): Float {
-    val location = IntArray(2)
-    anchor.getLocationOnScreen(location)
-    val y = location[1]
-    return y.toFloat()
+    val anchorLeft = location[0].toFloat()
+    val anchorRight = anchorLeft + anchorView.width
+    val anchorTop = location[1].toFloat()
+    val anchorBottom = anchorTop + anchorView.height
+    return SpotlightTarget(
+      anchorBounds = RectF(anchorLeft, anchorTop, anchorRight, anchorBottom),
+      hint,
+      shape,
+      feature
+    )
   }
+}
 
-  private fun calculateAnchorHeight(): Int {
-    return anchor.height
-  }
-
-  private fun calculateAnchorWidth(): Int {
-    return anchor.width
-  }
-
-  private fun calculateAnchorCentreX(): Float {
-    return anchorLeft + anchorWidth / 2
-  }
-
-  private fun calculateAnchorCentreY(): Float {
-    return anchorTop + anchorHeight / 2
-  }
+data class SpotlightTarget(
+  val anchorBounds: RectF,
+  val hint: String,
+  val shape: SpotlightShape,
+  val feature: org.oppia.android.app.model.Spotlight.FeatureCase
+) {
+  val anchorLeft: Float get() = anchorBounds.left
+  val anchorTop: Float get() = anchorBounds.top
+  val anchorWidth: Float get() = anchorBounds.width()
+  val anchorHeight: Float get() = anchorBounds.height()
+  val anchorCenterX: Float get() = anchorBounds.centerX()
+  val anchorCenterY: Float get() = anchorBounds.centerY()
+  val anchorCenter: PointF get() = PointF(anchorBounds.centerX(), anchorBounds.centerY())
 }

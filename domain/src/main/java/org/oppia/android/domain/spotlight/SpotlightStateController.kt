@@ -38,7 +38,7 @@ class SpotlightStateController @Inject constructor(
   private val oppiaLogger: OppiaLogger,
   private val dataProviders: DataProviders
 ) {
-  /** Thrown when spotlight feature is not set while retrieving or marking spotlight view states. */
+  /** Thrown when spotlight feature is not set while retrieving or marbazel shjutking spotlight view states. */
   class SpotlightFeatureNotFoundException(message: String) : IllegalArgumentException(message)
 
   private val cacheStoreMap =

@@ -51,6 +51,7 @@ MAVEN_PRODUCTION_DEPENDENCY_VERSIONS = {
     "com.crashlytics.sdk.android:crashlytics": "2.9.8",
     "com.github.bumptech.glide:compiler": "4.11.0",
     "com.github.bumptech.glide:glide": "4.11.0",
+    "com.github.takusemba:spotlight": "2.0.5",
     "com.google.android.flexbox:flexbox": "3.0.0",
     "com.google.android.material:material": "1.3.0",
     "com.google.firebase:firebase-analytics": "17.5.0",
